@@ -21,6 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/ux.css" />
 </head>
 <body data-view="home">
   <!-- Ambient dynamic background glow -->
@@ -45,21 +46,23 @@
         <nav class="desktop-nav" aria-label="Primary Navigation">
           <button class="nav-link active" data-nav="home">Home</button>
           <button class="nav-link" data-nav="discover" data-filter-type="movie">Movies</button>
-          <button class="nav-link" data-nav="discover" data-filter-type="tv">TV Series</button>
-          <button class="nav-link" data-nav="discover" data-filter-type="views">New &amp; Trending</button>
+          <button class="nav-link" data-nav="discover" data-filter-type="tv">TV Shows</button>
+          <button class="nav-link" data-nav="discover" data-filter-type="views">New &amp; Popular</button>
+          <button class="nav-link" data-nav="live">
+            <span class="live-pulse-dot"></span>Live TV
+          </button>
           <button class="nav-link" data-nav="party">
             <span class="live-dot"></span>Watch Party
           </button>
           <button class="nav-link" data-nav="mylist">My List <span class="badge-count" id="nav-mylist-count">0</span></button>
-          <button class="nav-link" data-nav="apilab">API Lab</button>
         </nav>
       </div>
 
       <div class="header-right">
         <!-- Expandable Search Input -->
         <div class="search-box" id="search-box">
-          <button class="icon-btn search-trigger" id="search-toggle-btn" aria-label="Search titles or IDs" title="Search titles, TMDB ID, or IMDb ID">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+          <button class="search-trigger" id="search-toggle-btn" aria-label="Search" title="Search titles, or paste a TMDB / IMDb ID">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7"></circle>
               <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
             </svg>
@@ -77,9 +80,14 @@
 
         <!-- Theme Color Swatch Selector (?theme=HEX integration) -->
         <div class="theme-dropdown-wrapper">
-          <button class="icon-btn theme-btn" id="theme-Menu-btn" aria-label="Customize Player & App Theme Color" title="Player Theme Color (?theme=HEX)">
+          <button class="icon-btn theme-btn" id="theme-Menu-btn" aria-label="Change accent colour" title="Accent colour">
+            <svg class="theme-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+              <path d="M12 3a9 9 0 100 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H17a4 4 0 004-4c0-4.4-4-8.2-9-8.2z"/>
+              <circle cx="7.5" cy="11" r="1.2" fill="currentColor" stroke="none"/>
+              <circle cx="10.5" cy="7.2" r="1.2" fill="currentColor" stroke="none"/>
+              <circle cx="15" cy="7.6" r="1.2" fill="currentColor" stroke="none"/>
+            </svg>
             <span class="theme-swatch-dot" id="current-theme-dot"></span>
-            <span class="hide-sm">Theme</span>
           </button>
           <div class="theme-popover" id="theme-popover" hidden>
             <div class="popover-title">Player &amp; UI Accent (<code>?theme=</code>)</div>
@@ -100,8 +108,8 @@
         </div>
 
         <!-- PWA Install Button -->
-        <button class="pwa-install-btn" id="pwa-install-btn" title="Install SparkFlix as a Progressive Web App">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+        <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install app" title="Install SparkFlix as an app">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
             <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
           </svg>
           <span class="hide-sm">Install</span>
@@ -117,6 +125,7 @@
     <!-- Mobile Sticky Category Pills (Netflix Mobile Style) -->
     <div class="mobile-category-bar" id="mobile-category-bar">
       <button class="cat-pill active" data-pill="all">For You</button>
+      <button class="cat-pill" data-pill="live"><span class="live-pulse-dot"></span>Live TV</button>
       <button class="cat-pill" data-pill="movies">Movies</button>
       <button class="cat-pill" data-pill="tv">TV Shows</button>
       <button class="cat-pill" data-pill="trending">New &amp; Hot</button>
@@ -222,61 +231,50 @@
     <!-- ==================== VIEW 2: DISCOVER & SEARCH CATALOG ==================== -->
     <section class="view-section" id="view-discover">
       <div class="section-container">
-        <div class="discover-top-bar">
-          <div>
-            <h1 class="page-heading" id="discover-heading">Explore Catalog</h1>
-            <p class="page-subheading">Powered by the VidSpark Discovery REST API</p>
-          </div>
-          <div class="api-url-pill" id="discover-api-pill" title="Active VidSpark Discovery API endpoint">
-            <span class="method-tag">GET</span>
-            <code id="discover-endpoint-display">https://vidspark.to/api/discover/movies?page=1&amp;ordering=views&amp;direction=desc</code>
+        <div class="discover-head">
+          <h1 class="page-heading" id="discover-heading">Movies</h1>
+          <div class="discover-tabs" role="tablist" aria-label="Browse">
+            <button class="discover-tab active" role="tab" aria-selected="true" data-endpoint="movies">Movies</button>
+            <button class="discover-tab" role="tab" aria-selected="false" data-endpoint="tv">TV Shows</button>
+            <button class="discover-tab" role="tab" aria-selected="false" data-endpoint="views">Trending</button>
           </div>
         </div>
 
-        <!-- Discovery Filter Controls (Matches Section 05 Query Parameters) -->
-        <div class="discover-filters-card">
-          <div class="filter-group">
-            <label for="filter-endpoint">Endpoint</label>
-            <select id="filter-endpoint">
-              <option value="movies">/api/discover/movies (Movies)</option>
-              <option value="tv">/api/discover/tv (TV Shows)</option>
-              <option value="views">/api/discover/views (Trending Views)</option>
-            </select>
-          </div>
-
-          <div class="filter-group" id="group-ordering">
-            <label for="filter-ordering">Sort By (<code>ordering</code>)</label>
+        <!-- Everyday filters (VidSpark Discovery API section 05 query parameters) -->
+        <div class="discover-toolbar">
+          <label class="toolbar-field" id="group-ordering">
+            <span>Sort</span>
             <select id="filter-ordering">
-              <option value="views">Total Views (views)</option>
-              <option value="views_week">Weekly Views (views_week)</option>
-              <option value="views_day">Daily Views (views_day)</option>
-              <option value="views_month">Monthly Views (views_month)</option>
-              <option value="year">Release Year (year)</option>
-              <option value="title">Title (title)</option>
-              <option value="updated_at">Recently Updated</option>
+              <option value="views">Most popular</option>
+              <option value="views_week">Popular this week</option>
+              <option value="views_day">Popular today</option>
+              <option value="views_month">Popular this month</option>
+              <option value="updated_at">Recently added</option>
+              <option value="year">Release year</option>
+              <option value="title">Title</option>
             </select>
-          </div>
+          </label>
 
-          <div class="filter-group" id="group-views-period" hidden>
-            <label for="filter-views-period">Views Period (<code>views</code>)</label>
+          <label class="toolbar-field" id="group-views-period" hidden>
+            <span>Period</span>
             <select id="filter-views-period">
-              <option value="week">This Week (week)</option>
-              <option value="day">Today (day)</option>
-              <option value="month">This Month (month)</option>
-              <option value="total">All Time (total)</option>
+              <option value="week">This week</option>
+              <option value="day">Today</option>
+              <option value="month">This month</option>
+              <option value="total">All time</option>
             </select>
-          </div>
+          </label>
 
-          <div class="filter-group" id="group-direction">
-            <label for="filter-direction">Direction</label>
+          <label class="toolbar-field" id="group-direction">
+            <span>Order</span>
             <select id="filter-direction">
-              <option value="desc">Descending (desc)</option>
-              <option value="asc">Ascending (asc)</option>
+              <option value="desc">High → low</option>
+              <option value="asc">Low → high</option>
             </select>
-          </div>
+          </label>
 
-          <div class="filter-group" id="group-year">
-            <label for="filter-year">Year (<code>year</code>)</label>
+          <label class="toolbar-field" id="group-year">
+            <span>Year</span>
             <select id="filter-year">
               <option value="">All Years</option>
               <option value="2026">2026</option>
@@ -287,30 +285,47 @@
               <option value="2021">2021</option>
               <option value="2020">2020</option>
             </select>
-          </div>
+          </label>
 
-          <div class="filter-group">
-            <label for="filter-flags">Curated Flags</label>
-            <select id="filter-flags">
-              <option value="">All Titles</option>
-              <option value="slider">Slider Highlights (slider=1)</option>
-              <option value="featured">Featured Only (featured=1)</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label for="filter-direct-id">Direct TMDB / IMDb ID</label>
-            <div class="inline-id-lookup">
-              <input type="text" id="filter-direct-id" placeholder="e.g. 1148365 or tt28498219" />
-              <button class="btn-accent-sm" id="btn-direct-lookup">Find</button>
+          <!-- Raw API controls, kept for the project demo but out of the everyday flow -->
+          <details class="discover-advanced">
+            <summary>API filters</summary>
+            <div class="discover-advanced-body">
+              <div class="filter-group">
+                <label for="filter-endpoint">Endpoint</label>
+                <select id="filter-endpoint">
+                  <option value="movies">/api/discover/movies</option>
+                  <option value="tv">/api/discover/tv</option>
+                  <option value="views">/api/discover/views</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-flags">Curated flags</label>
+                <select id="filter-flags">
+                  <option value="">All titles</option>
+                  <option value="slider">Slider highlights (slider=1)</option>
+                  <option value="featured">Featured only (featured=1)</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-direct-id">Open by TMDB / IMDb ID</label>
+                <div class="inline-id-lookup">
+                  <input type="text" id="filter-direct-id" placeholder="1148365 or tt28498219" />
+                  <button class="btn-accent-sm" id="btn-direct-lookup">Open</button>
+                </div>
+              </div>
+              <div class="api-url-pill" id="discover-api-pill" title="The exact VidSpark Discovery API request">
+                <span class="method-tag">GET</span>
+                <code id="discover-endpoint-display"></code>
+              </div>
             </div>
-          </div>
+          </details>
         </div>
 
-        <!-- Results Grid -->
         <div class="discover-status-bar">
-          <span id="discover-count-label">Loading titles...</span>
-          <div class="pagination-bar">
+          <span id="discover-count-label">Loading…</span>
+          <!-- Kept for keyboard/API demo; hidden in favour of infinite scroll -->
+          <div class="pagination-bar" hidden>
             <button class="btn-page" id="prev-page-btn" disabled>&larr; Prev</button>
             <span class="page-indicator" id="page-indicator">Page 1</span>
             <button class="btn-page" id="next-page-btn">Next &rarr;</button>
@@ -318,6 +333,10 @@
         </div>
 
         <div class="media-grid" id="discover-grid"></div>
+        <div class="discover-more" id="discover-more" hidden>
+          <button class="btn-secondary-sm" id="discover-more-btn">Load more</button>
+          <span class="discover-more-spinner" aria-hidden="true"></span>
+        </div>
       </div>
     </section>
 
@@ -326,9 +345,9 @@
       <div class="section-container">
         <div class="party-header">
           <div>
-            <span class="pill-tag">SECTION 04 &bull; postMessage SYNC</span>
-            <h1 class="page-heading">Watch Party Studio</h1>
-            <p class="page-subheading">Synchronize <code>play</code>, <code>pause</code>, and <code>seek</code> events across viewers using <code>WatchPartyController</code></p>
+            <span class="pill-tag"><span class="live-dot"></span> WATCH TOGETHER</span>
+            <h1 class="page-heading">Watch Party</h1>
+            <p class="page-subheading">Play, pause and skip stay in sync for everyone in the room. Open SparkFlix in another tab or device to join.</p>
           </div>
           <div class="party-room-controls">
             <div class="room-badge">
@@ -336,7 +355,7 @@
               <span>Room: <strong id="party-room-code">SPARK-2026</strong></span>
             </div>
             <button class="btn-secondary-sm" id="party-change-room-btn">Change Room</button>
-            <button class="btn-accent-sm" id="party-simulate-peer-btn">Simulate Friend Action</button>
+            <button class="btn-accent-sm" id="party-simulate-peer-btn">Try a demo friend</button>
           </div>
         </div>
 
@@ -366,10 +385,10 @@
               </div>
 
               <div class="party-remote-btns">
-                <button class="remote-btn" data-party-cmd="play" title="Broadcast Play">▶ Sync Play</button>
-                <button class="remote-btn" data-party-cmd="pause" title="Broadcast Pause">⏸ Sync Pause</button>
-                <button class="remote-btn" data-party-cmd="seek90" title="Broadcast Seek to 1:30">⏩ Jump 1:30</button>
-                <button class="remote-btn" data-party-cmd="status" title="Request playerstatus">📡 Ping Status</button>
+                <button class="remote-btn" data-party-cmd="play" title="Play for everyone">Play all</button>
+                <button class="remote-btn" data-party-cmd="pause" title="Pause for everyone">Pause all</button>
+                <button class="remote-btn" data-party-cmd="seek90" title="Everyone jumps to 1:30">Jump to 1:30</button>
+                <button class="remote-btn" data-party-cmd="status" title="Ask the player for its status (getStatus)">Player status</button>
               </div>
             </div>
           </div>
@@ -396,115 +415,144 @@
         <div class="discover-top-bar">
           <div>
             <h1 class="page-heading">My List</h1>
-            <p class="page-subheading">Saved movies &amp; series persisted offline on your device</p>
+            <p class="page-subheading">Movies and shows you have saved for later.</p>
           </div>
         </div>
         <div class="media-grid" id="mylist-grid"></div>
       </div>
     </section>
 
-    <!-- ==================== VIEW 5: INTERACTIVE API LAB (FOR SCHOOL PROJECT PRESENTATION) ==================== -->
-    <section class="view-section" id="view-apilab">
+    <!-- ==================== VIEW 6: LIVE SPORTS & TV HUB (HLS .m3u8 + YOOYOTV ALBAPLAYER) ==================== -->
+    <section class="view-section" id="view-live">
       <div class="section-container">
         <div class="discover-top-bar">
           <div>
-            <span class="pill-tag">SCHOOL PROJECT SHOWCASE</span>
-            <h1 class="page-heading">VidSpark API Interactive Lab</h1>
-            <p class="page-subheading">Test every endpoint, URL parameter, and <code>window.postMessage</code> capability from the documentation</p>
+            <span class="pill-tag"><span class="live-pulse-dot"></span> LIVE BROADCAST &bull; HLS (.m3u8) &amp; ALBAPLAYER</span>
+            <h1 class="page-heading">Live Sports &amp; TV Hub</h1>
+            <p class="page-subheading">
+              Auto-synced feeds from <code>yooyotvlive.com.ng</code> (RenRen TiYu / AlbaPlayer) + 24/7 HD HLS channels
+            </p>
+          </div>
+          <div class="live-top-actions">
+            <div class="api-url-pill" title="Backend Live Stream Discovery & Resolver API">
+              <span class="method-tag">GET</span>
+              <code id="live-active-source-display">/api/live/channels</code>
+            </div>
+            <button class="btn-secondary-sm" id="live-refresh-btn" title="Refresh live feeds from upstream">
+              &#8635; Refresh Feeds
+            </button>
           </div>
         </div>
 
-        <div class="apilab-grid">
-          <!-- Card 1: Live Embed URL Builder (Sections 01, 02, 03) -->
-          <div class="apilab-card">
-            <h3>01–03 / Live Embed &amp; Player Parameter Builder</h3>
-            <p class="card-desc">Change the TMDB/IMDb ID, format, season, episode, start timestamp, or hex theme color.</p>
+        <div class="live-hub-layout">
+          <!-- Main Live Video Stage -->
+          <div class="live-stage-column">
+            <div class="live-video-shell" id="live-video-shell">
+              <!-- Engine 1: Native HTML5 + hls.js (.m3u8) -->
+              <video
+                id="live-hls-video"
+                class="live-video-el"
+                playsinline
+                controls
+                poster="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80"
+              ></video>
 
-            <div class="builder-form">
-              <div class="form-row">
-                <div class="form-field">
-                  <label>Media Type</label>
-                  <select id="lab-type">
-                    <option value="movie">Movie (/movie/$id)</option>
-                    <option value="tv">TV Series (/tv/$id/$s/$e)</option>
-                    <option value="tv-hyphen">TV Hyphen (/tv/$id-$s-$e)</option>
+              <!-- Engine 2: AlbaPlayer / External Iframe Embed -->
+              <iframe
+                id="live-embed-iframe"
+                class="live-iframe-el"
+                src="about:blank"
+                allowfullscreen
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                title="Live Broadcast Embed Player"
+                hidden
+              ></iframe>
+
+              <div class="live-stage-badge-bar">
+                <span class="live-onair-pill"><span class="live-pulse-dot"></span> <span id="live-playing-badge">LIVE</span></span>
+                <span class="live-channel-pill" id="live-playing-title">Select a channel</span>
+              </div>
+            </div>
+
+            <!-- Player Engine Switcher & Stream Controls -->
+            <div class="live-control-strip">
+              <div class="live-engine-group">
+                <span class="live-strip-label">Player Mode:</span>
+                <div class="segmented-control" id="live-engine-toggle">
+                  <button class="seg-btn active" data-live-engine="hls" title="Play raw .m3u8 stream directly with hls.js">
+                    HLS (.m3u8) Direct
+                  </button>
+                  <button class="seg-btn" data-live-engine="proxy" title="Proxy .m3u8 via server.js with Referer headers">
+                    HLS Server Proxy
+                  </button>
+                  <button class="seg-btn" data-live-engine="embed" title="Embed yooyotvlive.com.ng AlbaPlayer iframe">
+                    YooyoTV Embed (AlbaPlayer)
+                  </button>
+                </div>
+              </div>
+
+              <div class="live-strip-right">
+                <label class="remote-inline-control" id="live-quality-wrap">
+                  <span>Quality</span>
+                  <select id="live-quality-select">
+                    <option value="-1">Auto (Adaptive)</option>
                   </select>
-                </div>
-                <div class="form-field">
-                  <label>TMDB or IMDb ID (<code>$id</code>)</label>
-                  <input type="text" id="lab-id" value="1148365" placeholder="1148365 or tt28498219" />
-                </div>
+                </label>
+                <button class="remote-btn" id="live-copy-stream-btn" title="Copy active .m3u8 or embed URL">
+                  Copy Stream URL
+                </button>
+                <button class="remote-btn" id="live-fullscreen-btn" title="Toggle Fullscreen">
+                  &#9974; Fullscreen
+                </button>
               </div>
+            </div>
 
-              <div class="form-row" id="lab-tv-fields" hidden>
-                <div class="form-field">
-                  <label>Season (<code>$s</code>)</label>
-                  <input type="number" id="lab-season" value="5" min="1" />
-                </div>
-                <div class="form-field">
-                  <label>Episode (<code>$e</code>)</label>
-                  <input type="number" id="lab-episode" value="3" min="1" />
-                </div>
+            <!-- Custom .m3u8 / AlbaPlayer Channel Loader -->
+            <div class="live-custom-loader-card">
+              <div class="live-loader-header">
+                <strong>Load Custom <code>.m3u8</code> Link or YooyoTV Channel ID</strong>
+                <span class="live-loader-hint">Paste any <code>https://...m3u8</code> link (e.g. <code>play.aarray.cn/rrty/...</code>) or AlbaPlayer ID (e.g. <code>test-1</code>)</span>
               </div>
-
-              <div class="form-row">
-                <div class="form-field">
-                  <label>Start Time (<code>?t=</code> or <code>?startAt=</code>)</label>
-                  <input type="text" id="lab-start" placeholder="e.g. 90 or 1h5m30s" />
-                </div>
-                <div class="form-field">
-                  <label>Theme Hex (<code>?theme=</code>)</label>
-                  <input type="text" id="lab-theme" value="c8f135" maxlength="6" />
-                </div>
-              </div>
-
-              <div class="code-output-box">
-                <div class="code-box-header">
-                  <span>Generated Embed Code</span>
-                  <button class="btn-xs" id="lab-copy-btn">Copy HTML</button>
-                </div>
-                <pre><code id="lab-iframe-code">&lt;iframe src="https://vidspark.to/movie/1148365?theme=c8f135" width="100%" height="100%" allowfullscreen&gt;&lt;/iframe&gt;</code></pre>
-              </div>
-
-              <button class="btn-hero-play full-width" id="lab-launch-btn">
-                <span>Launch in Main Player Modal</span>
-              </button>
+              <form class="live-custom-form" id="live-custom-form">
+                <input
+                  type="text"
+                  id="live-custom-title"
+                  class="live-input-sm"
+                  placeholder="Channel Label (optional)"
+                />
+                <input
+                  type="text"
+                  id="live-custom-url"
+                  class="live-input-url"
+                  placeholder="https://play.aarray.cn/rrty/hd-zh-1-4518097_gqzm.m3u8?auth_key=... or test-1"
+                  required
+                />
+                <button type="submit" class="btn-accent-sm">&#9654; Play Now</button>
+                <button type="button" class="btn-secondary-sm" id="live-save-custom-btn">+ Save Channel</button>
+              </form>
             </div>
           </div>
 
-          <!-- Card 2: postMessage Telemetry & Command Console (Section 04) -->
-          <div class="apilab-card">
-            <div class="card-header-flex">
-              <div>
-                <h3>04 / <code>window.postMessage</code> Live Monitor</h3>
-                <p class="card-desc">Filtered on <code>e.data?.source === 'vidspark-player'</code></p>
-              </div>
-              <button class="btn-xs" id="clear-log-btn">Clear Log</button>
+          <!-- Right Sidebar: Quick Channel Guide -->
+          <aside class="live-guide-sidebar">
+            <div class="live-guide-header">
+              <h3>Live Channels Guide</h3>
+              <span class="peer-count" id="live-channel-count">8 channels</span>
             </div>
+            <div class="live-cat-tabs" id="live-cat-tabs">
+              <button class="live-cat-tab active" data-live-cat="all">All</button>
+              <button class="live-cat-tab" data-live-cat="sports">Sports</button>
+              <button class="live-cat-tab" data-live-cat="news">News &amp; TV</button>
+              <button class="live-cat-tab" data-live-cat="custom">Saved</button>
+            </div>
+            <div class="live-guide-list" id="live-guide-list"></div>
+          </aside>
+        </div>
 
-            <div class="telemetry-stats">
-              <div class="stat-box">
-                <span class="stat-label">Last Event</span>
-                <strong class="stat-val" id="stat-event">waiting...</strong>
-              </div>
-              <div class="stat-box">
-                <span class="stat-label">Current Time</span>
-                <strong class="stat-val" id="stat-time">0.0s</strong>
-              </div>
-              <div class="stat-box">
-                <span class="stat-label">Duration</span>
-                <strong class="stat-val" id="stat-duration">0.0s</strong>
-              </div>
-              <div class="stat-box">
-                <span class="stat-label">Progress</span>
-                <strong class="stat-val" id="stat-pct">0%</strong>
-              </div>
-            </div>
-
-            <div class="console-log-box" id="postmessage-log">
-              <div class="log-entry info">[System] Listening for window.postMessage from source: 'vidspark-player'...</div>
-            </div>
-          </div>
+        <!-- Full Channel Cards Grid below stage -->
+        <div class="live-grid-section">
+          <h2 class="rail-title" style="margin-bottom: 14px;">All Live Broadcasts &amp; Match Feeds</h2>
+          <div class="live-cards-grid" id="live-cards-grid"></div>
         </div>
       </div>
     </section>
@@ -546,11 +594,11 @@
       <!-- Custom postMessage Player Remote Control Bar (Section 04 Commands) -->
       <div class="player-remote-bar">
         <div class="remote-left">
-          <span class="remote-label"><span class="live-dot"></span>postMessage Remote</span>
-          <button class="pm-btn" data-pm-action="togglePlay" title="postMessage({ action: 'togglePlay' })">⏯ Play/Pause</button>
-          <button class="pm-btn" data-pm-action="seek-back" title="Seek -15s">⏪ -15s</button>
-          <button class="pm-btn" data-pm-action="seek-fwd" title="Seek +30s">⏩ +30s</button>
-          <button class="pm-btn" data-pm-action="muteToggle" id="pm-mute-btn" title="postMessage({ action: 'mute' / 'unmute' })">🔊 Mute</button>
+          <span class="remote-label"><span class="live-dot"></span>Remote</span>
+          <button class="pm-btn" data-pm-action="togglePlay" title="postMessage({ action: 'togglePlay' })">Play / Pause</button>
+          <button class="pm-btn" data-pm-action="seek-back" title="Seek -15s">−15s</button>
+          <button class="pm-btn" data-pm-action="seek-fwd" title="Seek +30s">+30s</button>
+          <button class="pm-btn" data-pm-action="muteToggle" id="pm-mute-btn" title="postMessage({ action: 'mute' / 'unmute' })">Mute</button>
         </div>
 
         <div class="remote-right">
@@ -570,7 +618,7 @@
             </select>
           </label>
 
-          <button class="pm-btn" data-pm-action="enterFullscreen" title="postMessage({ action: 'enterFullscreen' })">⛶ Fullscreen</button>
+          <button class="pm-btn" data-pm-action="enterFullscreen" title="postMessage({ action: 'enterFullscreen' })">Fullscreen</button>
         </div>
       </div>
 
@@ -724,6 +772,13 @@
       </svg>
       <span>Discover</span>
     </button>
+    <button class="bottom-nav-item" data-nav="live">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <polyline points="17 2 12 7 7 2"/>
+      </svg>
+      <span>Live TV</span>
+    </button>
     <button class="bottom-nav-item" data-nav="party">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
@@ -737,13 +792,6 @@
         <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
       </svg>
       <span>My List</span>
-    </button>
-    <button class="bottom-nav-item" data-nav="apilab">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="16 18 22 12 16 6"/>
-        <polyline points="8 6 2 12 8 18"/>
-      </svg>
-      <span>API Lab</span>
     </button>
   </nav>
 
@@ -759,6 +807,8 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
 
+  <!-- hls.js for playing .m3u8 live streams on desktop/Android browsers -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -107,6 +107,118 @@ const PROFILES = [
   { id: 'kids', name: 'Kids', color: '#16A085' }
 ];
 
+// Client-side fallback Live Sports & TV channels (also enriched by /api/live/channels on server.js)
+const FALLBACK_LIVE_CHANNELS = [
+  {
+    id: 'yooyo-test-1',
+    albaId: 'test-1',
+    title: 'YooyoTV Main Match Feed (RRTY HD)',
+    category: 'sports',
+    competition: 'Live Football · RenRen TiYu',
+    badge: 'LIVE MATCH',
+    quality: 'HD 1080p',
+    language: 'Live Stadium / ZH',
+    m3u8Url:
+      'https://play.aarray.cn/rrty/hd-zh-1-4518097_gqzm.m3u8?auth_key=1794695523-0-0-afae1a8fa2307546474308566c247e1c&token=b31b516187a32f20&device=4&platform=rrty',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=test-1',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'yooyo-test-2',
+    albaId: 'test-2',
+    title: 'YooyoTV Match Arena 2',
+    category: 'sports',
+    competition: 'Premier League & European Football',
+    badge: 'LIVE SPORTS',
+    quality: 'HD',
+    language: 'Multi',
+    m3u8Url: '',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=test-2',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'yooyo-bein-1',
+    albaId: 'bein-1',
+    title: 'YooyoTV Sports Channel 3 (beIN / Sky)',
+    category: 'sports',
+    competition: 'UEFA Champions League & LaLiga',
+    badge: 'LIVE SPORTS',
+    quality: 'HD',
+    language: 'EN / AR',
+    m3u8Url: '',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=bein-1',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'redbull-tv',
+    title: 'Red Bull TV — Live Action Sports',
+    category: 'sports',
+    competition: 'Motorsport · Rally · Extreme Sports 24/7',
+    badge: '24/7 HD',
+    quality: 'FHD 1080p',
+    language: 'EN',
+    m3u8Url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'rbmn-live.akamaized.net',
+    poster: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'sky-news-live',
+    title: 'Sky News International & Sports Desk',
+    category: 'news',
+    competition: 'Breaking News & UK Sports Updates',
+    badge: 'LIVE TV',
+    quality: 'HD 720p',
+    language: 'EN',
+    m3u8Url: 'https://linear901-oo-hls0-prd-gtm.delivery.skycdp.com/17501/sde-fast-skynews/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'skycdp.com',
+    poster: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'dw-english',
+    title: 'DW English — Global News & Football',
+    category: 'news',
+    competition: 'Bundesliga Highlights & World News',
+    badge: 'LIVE TV',
+    quality: 'HD 1080p',
+    language: 'EN',
+    m3u8Url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
+    embedUrl: '',
+    sourceSite: 'akamaized.net',
+    poster: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'aljazeera-en',
+    title: 'Al Jazeera English Live',
+    category: 'news',
+    competition: '24/7 World Broadcast & Sports',
+    badge: 'LIVE TV',
+    quality: 'HD 1080p',
+    language: 'EN',
+    m3u8Url: 'https://live-hls-web-aje.getaj.net/AJE/index.m3u8',
+    embedUrl: '',
+    sourceSite: 'getaj.net',
+    poster: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'nasa-tv',
+    title: 'NASA TV Public — Live Space Station',
+    category: 'entertainment',
+    competition: 'ISS Earth Views & Mission Control',
+    badge: 'LIVE 24/7',
+    quality: 'HD',
+    language: 'EN',
+    m3u8Url: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'ntv1.akamaized.net',
+    poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=900&q=80'
+  }
+];
+
 // Gradient pairs for the placeholder shown while a poster loads (or if it 404s)
 const POSTER_PALETTES = [
   ['#3a1c71', '#d76d77'],
@@ -188,6 +300,15 @@ const state = {
   watchParty: {
     roomCode: 'SPARK-2026',
     controller: null,
+    loaded: false
+  },
+  live: {
+    channels: [...FALLBACK_LIVE_CHANNELS],
+    customChannels: storage.get('sparkflix:live_custom', []),
+    activeChannel: null,
+    engine: 'hls', // 'hls' | 'proxy' | 'embed'
+    category: 'all', // 'all' | 'sports' | 'news' | 'custom'
+    hlsInstance: null,
     loaded: false
   },
   deferredPrompt: null
@@ -561,6 +682,7 @@ async function loadRail(rail) {
 
 function loadHomeRails() {
   renderContinueWatchingRail();
+  loadLiveChannels();
   // Rails load in parallel; each one renders as soon as its own request resolves
   return Promise.all(HOME_RAILS.map(loadRail));
 }
@@ -659,17 +781,33 @@ function resetHeroTimer() {
 // ==================== DISCOVER / SEARCH ====================
 const DISCOVER_HEADINGS = { movies: 'Movies', tv: 'TV Shows', views: 'New & Trending' };
 
-async function loadDiscoverGrid() {
+// Discover uses infinite scroll: page 1 replaces the grid, later pages are appended
+// when the user nears the bottom (IntersectionObserver) or taps "Load more".
+async function loadDiscoverGrid({ append = false } = {}) {
   const d = state.discover;
+  if (!append) {
+    d.page = 1;
+    // New tab / filter / search: start at the top so infinite scroll doesn't fire straight away
+    // ('instant' because the page CSS sets scroll-behavior: smooth, and a slow scroll would
+    //  leave the load-more sentinel on screen long enough to trigger page 2)
+    if (state.currentView === 'discover' && window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'instant' });
+  }
   const requestId = ++d.requestId;
   const grid = $('discover-grid');
   const countLabel = $('discover-count-label');
+  const more = $('discover-more');
+  d.loading = true;
 
   $('group-views-period').hidden = d.endpoint !== 'views';
   $('group-ordering').hidden = d.endpoint === 'views';
   $('group-direction').hidden = d.endpoint === 'views';
   $('group-year').hidden = d.endpoint === 'tv';
   $('discover-heading').textContent = d.query ? `Results for “${d.query}”` : DISCOVER_HEADINGS[d.endpoint];
+  document.querySelectorAll('.discover-tab').forEach((t) => {
+    const on = t.dataset.endpoint === d.endpoint;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
 
   const params = { page: d.page, resultsPerPage: 24 };
   if (d.endpoint === 'views') {
@@ -688,33 +826,50 @@ async function loadDiscoverGrid() {
   $('discover-endpoint-display').textContent = `https://vidspark.to/api/discover/${d.endpoint}?${new URLSearchParams(
     params
   )}`;
-  countLabel.textContent = 'Loading…';
-  renderSkeletons(grid, 12);
+  if (append) {
+    more.classList.add('is-loading');
+  } else {
+    countLabel.textContent = 'Loading…';
+    renderSkeletons(grid, 12);
+    more.hidden = true;
+  }
 
   const res = await fetchVidSparkDiscover(d.endpoint, params);
   if (requestId !== d.requestId) return; // a newer search/filter superseded this one
+  d.loading = false;
+  more.classList.remove('is-loading');
 
   const items = res.data || [];
   const total = Number(res.total || items.length);
-  const lastPage = res.last_page || 1;
+  d.lastPage = res.offline ? 1 : res.last_page || 1;
 
   countLabel.textContent = res.offline
     ? 'Offline — showing saved picks'
     : d.query
     ? `${total.toLocaleString()} result${total === 1 ? '' : 's'}`
-    : `Page ${d.page} of ${Number(lastPage).toLocaleString()} · ${total.toLocaleString()} titles`;
+    : `${total.toLocaleString()} titles`;
   $('page-indicator').textContent = `Page ${d.page}`;
   $('prev-page-btn').disabled = d.page <= 1;
-  $('next-page-btn').disabled = d.page >= lastPage;
+  $('next-page-btn').disabled = d.page >= d.lastPage;
+  more.hidden = d.page >= d.lastPage || items.length === 0;
 
-  grid.innerHTML = '';
-  if (items.length === 0) {
-    grid.innerHTML = `<div class="empty-state">No titles match. Try a different search, or paste a TMDB / IMDb ID.</div>`;
+  if (!append) grid.innerHTML = '';
+  if (!append && items.length === 0) {
+    grid.innerHTML = d.query
+      ? `<div class="empty-state"><strong>No results for “${escapeHtml(d.query)}”.</strong><br />Check the spelling, try another title, or paste a TMDB / IMDb ID and press Enter.</div>`
+      : `<div class="empty-state">No titles match these filters.</div>`;
     return;
   }
   const defaultType = d.endpoint === 'tv' ? 'tv' : 'movie';
   rememberCatalog(defaultType, items);
   items.forEach((item) => grid.appendChild(createMediaCard(item, { defaultType })));
+}
+
+function loadMoreDiscover() {
+  const d = state.discover;
+  if (d.loading || state.currentView !== 'discover' || d.page >= (d.lastPage || 1)) return;
+  d.page++;
+  loadDiscoverGrid({ append: true });
 }
 
 // Direct lookup by TMDB ID (digits) or IMDb ID (tt…)
@@ -1018,17 +1173,6 @@ window.addEventListener('message', (e) => {
   const { event, currentTime, duration, percentage } = e.data;
   const fromMain = e.source === $('main-player-iframe').contentWindow;
 
-  // API Lab live monitor (shows events from any VidSpark player on the page)
-  $('stat-event').textContent = event || 'message';
-  if (currentTime !== undefined) $('stat-time').textContent = `${Number(currentTime).toFixed(1)}s`;
-  if (duration !== undefined) $('stat-duration').textContent = `${Number(duration).toFixed(1)}s`;
-  if (percentage !== undefined) $('stat-pct').textContent = `${Math.round(Number(percentage))}%`;
-  if (event !== 'timeupdate') {
-    appendPostMessageLog(
-      'evt',
-      `${fromMain ? 'main' : 'party'} · '${event}' @ ${Number(currentTime || 0).toFixed(1)}s`
-    );
-  }
 
   // Only the main player feeds Continue Watching
   if (!fromMain || !state.activeModal.item) return;
@@ -1270,7 +1414,16 @@ function renderMyListView() {
   const grid = $('mylist-grid');
   grid.innerHTML = '';
   if (state.myList.length === 0) {
-    grid.innerHTML = `<div class="empty-state">Your list is empty. Tap <strong>+</strong> on any title to save it here.</div>`;
+    grid.innerHTML = `
+      <div class="empty-state empty-state-rich">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        <h2>Your list is empty</h2>
+        <p>Tap <strong>+</strong> on any movie or show to save it here for later.</p>
+        <button class="btn-hero-play" type="button" data-empty-browse>Browse movies</button>
+      </div>`;
+    grid.querySelector('[data-empty-browse]').addEventListener('click', () =>
+      switchView('discover', { endpoint: 'movies', year: '', clearQuery: true })
+    );
     return;
   }
   state.myList.forEach((item) => grid.appendChild(createMediaCard(item)));
@@ -1344,18 +1497,374 @@ function applyThemeHex(rawHex, { silent = false } = {}) {
   root.setProperty('--accent-glow', `#${hex}55`);
 
   $('custom-hex-input').value = state.themeHex;
-  $('lab-theme').value = state.themeHex;
   document.querySelectorAll('.swatch-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.hex.toLowerCase() === hex.toLowerCase());
   });
 
   if (state.activeModal.item && !$('player-modal').hidden) applyPlayerOptions();
-  updateApiLabBuilder();
   if (!silent) showToast(`Theme set to #${state.themeHex} — the player uses ?theme=${state.themeHex}`);
 }
 
+// ==================== LIVE SPORTS & TV HUB (HLS .m3u8 + YOOYOTV ALBAPLAYER) ====================
+function getAllLiveChannels() {
+  const custom = (state.live.customChannels || []).map((c) => ({ ...c, isCustom: true }));
+  return [...custom, ...(state.live.channels || FALLBACK_LIVE_CHANNELS)];
+}
+
+function getFilteredLiveChannels() {
+  const all = getAllLiveChannels();
+  const cat = state.live.category;
+  if (cat === 'all') return all;
+  if (cat === 'custom') return all.filter((c) => c.isCustom);
+  if (cat === 'sports') return all.filter((c) => c.category === 'sports');
+  return all.filter((c) => c.category !== 'sports');
+}
+
+function createLiveBroadcastCard(channel) {
+  const card = document.createElement('article');
+  const isActive = state.live.activeChannel && state.live.activeChannel.id === channel.id;
+  card.className = `live-broadcast-card${isActive ? ' active' : ''}`;
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('aria-label', `Watch ${channel.title} Live`);
+
+  const engineTag = channel.m3u8Url ? 'HLS .m3u8' : 'AlbaPlayer';
+  card.innerHTML = `
+    <div class="live-card-thumb">
+      <img src="${escapeHtml(
+        channel.poster || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
+      )}" alt="" loading="lazy" decoding="async" />
+      <div class="live-card-shade"></div>
+      <div class="live-card-top-badges">
+        <span class="live-badge-pill"><span class="live-pulse-dot"></span> ${escapeHtml(channel.badge || 'LIVE')}</span>
+        <span class="live-quality-pill">${escapeHtml(channel.quality || 'HD')}</span>
+      </div>
+      <div class="live-card-play-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M6 4l15 8-15 8z" /></svg>
+      </div>
+      <span class="live-engine-chip">${escapeHtml(engineTag)}</span>
+    </div>
+    <div class="live-card-body">
+      <div class="live-card-title" title="${escapeHtml(channel.title)}">${escapeHtml(channel.title)}</div>
+      <div class="live-card-sub">${escapeHtml(channel.competition || channel.sourceSite || 'Live Stream')}</div>
+    </div>
+  `;
+
+  const trigger = () => {
+    if (state.currentView !== 'live') {
+      switchView('live');
+    }
+    playLiveChannel(channel, { autoplay: true });
+    const shell = $('live-video-shell');
+    if (shell) shell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  card.addEventListener('click', trigger);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      trigger();
+    }
+  });
+  return card;
+}
+
+function renderLiveHomeRail() {
+  const scroller = $('scroller-live');
+  if (!scroller) return;
+  scroller.innerHTML = '';
+  const list = getAllLiveChannels();
+  list.forEach((ch) => scroller.appendChild(createLiveBroadcastCard(ch)));
+  if (scroller._updateArrows) requestAnimationFrame(scroller._updateArrows);
+}
+
+function renderLiveHubLists() {
+  const guideEl = $('live-guide-list');
+  const gridEl = $('live-cards-grid');
+  const countEl = $('live-channel-count');
+  if (!guideEl || !gridEl) return;
+
+  const all = getAllLiveChannels();
+  const filtered = getFilteredLiveChannels();
+  if (countEl) countEl.textContent = `${all.length} channels`;
+
+  guideEl.innerHTML = '';
+  if (filtered.length === 0) {
+    guideEl.innerHTML = `<div class="live-guide-empty">No channels in this category yet. Use the form below the player to save custom <code>.m3u8</code> or AlbaPlayer feeds.</div>`;
+  } else {
+    filtered.forEach((ch) => {
+      const item = document.createElement('div');
+      const isActive = state.live.activeChannel && state.live.activeChannel.id === ch.id;
+      item.className = `live-guide-item${isActive ? ' active' : ''}`;
+      item.innerHTML = `
+        <div class="live-guide-item-main" role="button" tabindex="0">
+          <span class="live-pulse-dot"></span>
+          <div class="live-guide-text">
+            <div class="live-guide-name">${escapeHtml(ch.title)}</div>
+            <div class="live-guide-meta">${escapeHtml(ch.competition || ch.sourceSite || 'Live')} &bull; ${escapeHtml(
+        ch.quality || 'HD'
+      )}</div>
+          </div>
+          <span class="live-guide-tag">${ch.m3u8Url ? 'M3U8' : 'EMBED'}</span>
+        </div>
+        ${
+          ch.isCustom
+            ? `<button class="live-guide-del" title="Remove saved channel" aria-label="Remove">&times;</button>`
+            : ''
+        }
+      `;
+      item.querySelector('.live-guide-item-main').addEventListener('click', () => {
+        playLiveChannel(ch, { autoplay: true });
+      });
+      const delBtn = item.querySelector('.live-guide-del');
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeCustomLiveChannel(ch.id);
+        });
+      }
+      guideEl.appendChild(item);
+    });
+  }
+
+  gridEl.innerHTML = '';
+  all.forEach((ch) => gridEl.appendChild(createLiveBroadcastCard(ch)));
+}
+
+async function loadLiveChannels({ forceRefresh = false } = {}) {
+  renderLiveHomeRail();
+  renderLiveHubLists();
+
+  try {
+    const res = await fetch(`/api/live/channels${forceRefresh ? '?refresh=1' : ''}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.channels) && data.channels.length) {
+        state.live.channels = data.channels;
+      }
+    }
+  } catch (_) {
+    /* keep FALLBACK_LIVE_CHANNELS */
+  }
+
+  renderLiveHomeRail();
+  renderLiveHubLists();
+  if (forceRefresh) showToast('Synced live channels from yooyotvlive.com.ng & HLS feeds');
+}
+
+function stopLivePlayback() {
+  if (state.live.hlsInstance) {
+    try {
+      state.live.hlsInstance.destroy();
+    } catch (_) {}
+    state.live.hlsInstance = null;
+  }
+  const video = $('live-hls-video');
+  if (video) {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+  }
+  const iframe = $('live-embed-iframe');
+  if (iframe) {
+    iframe.src = 'about:blank';
+  }
+}
+
+function syncLiveEngineButtons() {
+  document.querySelectorAll('#live-engine-toggle .seg-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.liveEngine === state.live.engine);
+  });
+}
+
+async function playLiveChannel(channel, { engineOverride = null, autoplay = true } = {}) {
+  if (!channel) return;
+  state.live.activeChannel = channel;
+  state.live.loaded = true;
+
+  if (engineOverride) {
+    state.live.engine = engineOverride;
+  } else if (!channel.m3u8Url && channel.embedUrl && !channel.albaId) {
+    state.live.engine = 'embed';
+  } else if (state.live.engine === 'embed' && !channel.embedUrl && channel.m3u8Url) {
+    state.live.engine = 'hls';
+  }
+
+  $('live-playing-title').textContent = channel.title;
+  $('live-playing-badge').textContent = channel.badge || 'LIVE';
+  syncLiveEngineButtons();
+  renderLiveHomeRail();
+  renderLiveHubLists();
+
+  stopLivePlayback();
+
+  const video = $('live-hls-video');
+  const iframe = $('live-embed-iframe');
+  const qualityWrap = $('live-quality-wrap');
+  const qualitySelect = $('live-quality-select');
+
+  // If this is a YooyoTV AlbaPlayer channel without a resolved m3u8Url yet, ask /api/live/resolve
+  if (channel.albaId && !channel.m3u8Url && state.live.engine !== 'embed') {
+    $('live-active-source-display').textContent = `/api/live/resolve?id=${channel.albaId}`;
+    try {
+      const res = await fetch(`/api/live/resolve?id=${encodeURIComponent(channel.albaId)}`);
+      if (res.ok) {
+        const resolved = await res.json();
+        if (resolved && resolved.m3u8Url) {
+          channel.m3u8Url = resolved.m3u8Url;
+        }
+      }
+    } catch (_) {
+      /* fallback below */
+    }
+  }
+
+  // Decide final playback mode
+  let mode = state.live.engine;
+  if ((mode === 'hls' || mode === 'proxy') && !channel.m3u8Url && channel.embedUrl) {
+    mode = 'embed';
+    state.live.engine = 'embed';
+    syncLiveEngineButtons();
+  }
+
+  if (mode === 'embed') {
+    const targetEmbed =
+      channel.embedUrl ||
+      (channel.albaId
+        ? `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(channel.albaId)}`
+        : channel.m3u8Url);
+    video.hidden = true;
+    iframe.hidden = false;
+    qualityWrap.hidden = true;
+    iframe.src = targetEmbed;
+    $('live-active-source-display').textContent = targetEmbed;
+    return;
+  }
+
+  // HLS (.m3u8) playback (Direct or via Server Proxy)
+  const rawM3u8 = channel.m3u8Url;
+  const playUrl = mode === 'proxy' ? `/api/live/proxy?url=${encodeURIComponent(rawM3u8)}` : rawM3u8;
+  $('live-active-source-display').textContent = playUrl;
+
+  iframe.hidden = true;
+  video.hidden = false;
+  qualityWrap.hidden = false;
+  qualitySelect.innerHTML = '<option value="-1">Auto (Adaptive)</option>';
+  if (channel.poster) video.poster = channel.poster;
+
+  if (window.Hls && window.Hls.isSupported()) {
+    const hls = new window.Hls({
+      enableWorker: true,
+      lowLatencyMode: true
+    });
+    state.live.hlsInstance = hls;
+    hls.loadSource(playUrl);
+    hls.attachMedia(video);
+
+    hls.on(window.Hls.Events.MANIFEST_PARSED, (_, data) => {
+      const levels = data.levels || [];
+      qualitySelect.innerHTML = '<option value="-1">Auto (Adaptive)</option>';
+      levels.forEach((lvl, idx) => {
+        const label = lvl.height ? `${lvl.height}p (${Math.round((lvl.bitrate || 0) / 1000)} kbps)` : `Level ${idx + 1}`;
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = label;
+        qualitySelect.appendChild(opt);
+      });
+      if (autoplay) {
+        video.play().catch(() => {});
+      }
+    });
+
+    hls.on(window.Hls.Events.ERROR, (_, data) => {
+      if (!data.fatal) return;
+      // Automatic fallback cascade: Direct HLS -> Server Proxy HLS -> YooyoTV AlbaPlayer Embed
+      if (mode === 'hls') {
+        showToast('Direct .m3u8 token/CORS blocked — retrying via SparkFlix Server Proxy…');
+        playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
+      } else if (channel.embedUrl || channel.albaId) {
+        showToast('Switching to YooyoTV AlbaPlayer Embed for live token refresh…');
+        playLiveChannel(channel, { engineOverride: 'embed', autoplay: true });
+      } else {
+        showToast('Stream temporarily unavailable or auth_key expired');
+      }
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Native HLS on iOS / macOS Safari
+    video.src = playUrl;
+    if (autoplay) video.play().catch(() => {});
+  } else if (channel.embedUrl) {
+    playLiveChannel(channel, { engineOverride: 'embed', autoplay: true });
+  }
+}
+
+function buildCustomChannelFromInput(rawInput, rawTitle = '') {
+  const input = String(rawInput || '').trim();
+  if (!input) return null;
+
+  const isM3u8 = /\.m3u8(\?|$)/i.test(input);
+  const isAlbaUrl = /m3u8-player\.php\?id=([a-zA-Z0-9_-]+)/i.test(input);
+  const isShortId = /^[a-zA-Z0-9_-]{2,24}$/.test(input) && !/^https?:\/\//i.test(input);
+
+  let albaId = '';
+  let m3u8Url = '';
+  let embedUrl = '';
+
+  if (isM3u8) {
+    m3u8Url = input;
+  } else if (isAlbaUrl) {
+    albaId = input.match(/m3u8-player\.php\?id=([a-zA-Z0-9_-]+)/i)[1];
+    embedUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(albaId)}`;
+  } else if (isShortId) {
+    albaId = input;
+    embedUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(albaId)}`;
+  } else {
+    embedUrl = input;
+  }
+
+  const title =
+    rawTitle.trim() ||
+    (albaId
+      ? `YooyoTV Feed (${albaId.toUpperCase()})`
+      : isM3u8
+      ? `Custom HLS Stream (${new URL(input, location.origin).hostname})`
+      : 'Custom Live Stream');
+
+  return {
+    id: `custom-${Date.now()}`,
+    albaId,
+    title,
+    category: 'sports',
+    competition: albaId ? 'YooyoTV AlbaPlayer Channel' : 'Custom Live Feed',
+    badge: 'CUSTOM LIVE',
+    quality: 'HD',
+    language: 'Live',
+    m3u8Url,
+    embedUrl,
+    sourceSite: albaId ? 'yooyotvlive.com.ng' : 'Custom URL',
+    poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80',
+    isCustom: true
+  };
+}
+
+function saveCustomLiveChannel(channel) {
+  state.live.customChannels = [channel, ...(state.live.customChannels || []).filter((x) => x.title !== channel.title)];
+  storage.set('sparkflix:live_custom', state.live.customChannels);
+  renderLiveHomeRail();
+  renderLiveHubLists();
+  showToast(`Saved “${channel.title}” to Live Channels`);
+}
+
+function removeCustomLiveChannel(id) {
+  state.live.customChannels = (state.live.customChannels || []).filter((x) => x.id !== id);
+  storage.set('sparkflix:live_custom', state.live.customChannels);
+  renderLiveHomeRail();
+  renderLiveHubLists();
+  showToast('Removed custom channel');
+}
+
 // ==================== NAVIGATION ====================
-const VIEWS = ['home', 'discover', 'party', 'mylist', 'apilab'];
+const VIEWS = ['home', 'discover', 'live', 'party', 'mylist'];
 
 function syncNavHighlight() {
   const ep = state.discover.endpoint;
@@ -1368,6 +1877,8 @@ function syncNavHighlight() {
   const pill =
     state.currentView === 'home'
       ? 'all'
+      : state.currentView === 'live'
+      ? 'live'
       : state.currentView === 'mylist'
       ? 'mylist'
       : state.currentView === 'discover'
@@ -1378,6 +1889,9 @@ function syncNavHighlight() {
 
 function switchView(viewName, options = {}) {
   if (!VIEWS.includes(viewName)) viewName = 'home';
+  if (state.currentView === 'live' && viewName !== 'live') {
+    stopLivePlayback();
+  }
   state.currentView = viewName;
   document.querySelectorAll('.view-section').forEach((sec) => {
     sec.classList.toggle('active', sec.id === `view-${viewName}`);
@@ -1400,6 +1914,12 @@ function switchView(viewName, options = {}) {
       $('search-clear-btn').hidden = true;
     }
     loadDiscoverGrid();
+  } else if (viewName === 'live') {
+    renderLiveHubLists();
+    const initialChannel = state.live.activeChannel || getAllLiveChannels()[0];
+    if (initialChannel) {
+      playLiveChannel(initialChannel, { autoplay: true });
+    }
   } else if (viewName === 'mylist') {
     renderMyListView();
   } else if (viewName === 'party' && !state.watchParty.loaded) {
@@ -1409,22 +1929,6 @@ function switchView(viewName, options = {}) {
   syncNavHighlight();
   if (!options.fromHistory && location.hash !== `#${viewName}`) history.pushState({ view: viewName }, '', `#${viewName}`);
   window.scrollTo({ top: 0 });
-}
-
-// ==================== API LAB ====================
-function updateApiLabBuilder() {
-  const type = $('lab-type').value;
-  $('lab-tv-fields').hidden = type === 'movie';
-  const url = buildVidSparkEmbedUrl({
-    type: type === 'tv-hyphen' ? 'tv' : type,
-    id: $('lab-id').value.trim() || '1148365',
-    season: $('lab-season').value || 1,
-    episode: $('lab-episode').value || 1,
-    tvFormat: type === 'tv-hyphen' ? 'hyphen' : 'slash',
-    themeHex: $('lab-theme').value.trim(),
-    startAt: $('lab-start').value.trim()
-  });
-  $('lab-iframe-code').textContent = `<iframe\n  src="${url}"\n  width="100%" height="100%"\n  allowfullscreen></iframe>`;
 }
 
 function copyText(text, message) {
@@ -1497,12 +2001,90 @@ document.addEventListener('DOMContentLoaded', () => {
     pill.addEventListener('click', () => {
       const kind = pill.dataset.pill;
       if (kind === 'all') switchView('home');
+      else if (kind === 'live') switchView('live');
       else if (kind === 'movies') switchView('discover', { endpoint: 'movies', year: '', clearQuery: true });
       else if (kind === 'tv') switchView('discover', { endpoint: 'tv', year: '', clearQuery: true });
       else if (kind === 'trending') switchView('discover', { endpoint: 'views', year: '', clearQuery: true });
       else if (kind === 'mylist') switchView('mylist');
     });
   });
+
+  // Live TV & Sports Hub controls
+  if ($('home-goto-live-btn')) {
+    $('home-goto-live-btn').addEventListener('click', () => switchView('live'));
+  }
+  if ($('live-refresh-btn')) {
+    $('live-refresh-btn').addEventListener('click', () => loadLiveChannels({ forceRefresh: true }));
+  }
+  document.querySelectorAll('#live-engine-toggle .seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const engine = btn.dataset.liveEngine;
+      if (state.live.activeChannel) {
+        playLiveChannel(state.live.activeChannel, { engineOverride: engine, autoplay: true });
+      } else {
+        state.live.engine = engine;
+        syncLiveEngineButtons();
+      }
+    });
+  });
+  if ($('live-quality-select')) {
+    $('live-quality-select').addEventListener('change', (e) => {
+      if (state.live.hlsInstance) {
+        state.live.hlsInstance.currentLevel = Number(e.target.value);
+        showToast(e.target.value === '-1' ? 'Quality: Auto (Adaptive)' : `Quality locked to ${e.target.selectedOptions[0].textContent}`);
+      }
+    });
+  }
+  if ($('live-copy-stream-btn')) {
+    $('live-copy-stream-btn').addEventListener('click', () => {
+      const ch = state.live.activeChannel;
+      const url = ch ? ch.m3u8Url || ch.embedUrl : $('live-active-source-display').textContent;
+      if (url) copyText(url, 'Live stream URL copied to clipboard');
+    });
+  }
+  if ($('live-fullscreen-btn')) {
+    $('live-fullscreen-btn').addEventListener('click', () => {
+      const shell = $('live-video-shell');
+      if (!shell) return;
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else if (shell.requestFullscreen) shell.requestFullscreen().catch(() => {});
+    });
+  }
+  document.querySelectorAll('#live-cat-tabs .live-cat-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      state.live.category = tab.dataset.liveCat;
+      document.querySelectorAll('#live-cat-tabs .live-cat-tab').forEach((t) => t.classList.toggle('active', t === tab));
+      renderLiveHubLists();
+    });
+  });
+  if ($('live-custom-form')) {
+    $('live-custom-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ch = buildCustomChannelFromInput($('live-custom-url').value, $('live-custom-title').value);
+      if (!ch) return;
+      playLiveChannel(ch, {
+        engineOverride: ch.m3u8Url ? 'hls' : 'embed',
+        autoplay: true
+      });
+      showToast(`Playing ${ch.title}`);
+    });
+  }
+  if ($('live-save-custom-btn')) {
+    $('live-save-custom-btn').addEventListener('click', () => {
+      const ch = buildCustomChannelFromInput($('live-custom-url').value, $('live-custom-title').value);
+      if (!ch) {
+        showToast('Paste a .m3u8 URL or YooyoTV channel ID first');
+        return;
+      }
+      saveCustomLiveChannel(ch);
+      playLiveChannel(ch, {
+        engineOverride: ch.m3u8Url ? 'hls' : 'embed',
+        autoplay: true
+      });
+      $('live-custom-url').value = '';
+      $('live-custom-title').value = '';
+    });
+  }
   document.querySelectorAll('[data-goto-discover]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const t = btn.dataset.gotoDiscover;
@@ -1631,6 +2213,25 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDiscoverGrid();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+
+  // Discover: type tabs + infinite scroll
+  document.querySelectorAll('.discover-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const sel = $('filter-endpoint');
+      if (sel.value === tab.dataset.endpoint && !state.discover.query) return;
+      sel.value = tab.dataset.endpoint;
+      state.discover.query = '';
+      searchInput.value = '';
+      searchClear.hidden = true;
+      sel.dispatchEvent(new Event('change'));
+    });
+  });
+  $('discover-more-btn').addEventListener('click', loadMoreDiscover);
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && loadMoreDiscover(), {
+      rootMargin: '600px 0px'
+    }).observe($('discover-more'));
+  }
   $('btn-direct-lookup').addEventListener('click', () => handleDirectIdLookup($('filter-direct-id').value));
   $('filter-direct-id').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleDirectIdLookup(e.target.value);
@@ -1701,7 +2302,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (act === 'muteToggle') {
         state.activeModal.isMuted = !state.activeModal.isMuted;
         sendPlayerCommand(mainIframe, { action: state.activeModal.isMuted ? 'mute' : 'unmute' });
-        btn.textContent = state.activeModal.isMuted ? '🔇 Unmute' : '🔊 Mute';
+        btn.textContent = state.activeModal.isMuted ? 'Unmute' : 'Mute';
       }
     });
   });
@@ -1755,37 +2356,6 @@ document.addEventListener('DOMContentLoaded', () => {
     party.chat(txt);
     input.value = '';
   });
-
-  // API Lab
-  ['lab-type', 'lab-id', 'lab-season', 'lab-episode', 'lab-start', 'lab-theme'].forEach((id) => {
-    $(id).addEventListener('input', updateApiLabBuilder);
-  });
-  updateApiLabBuilder();
-  $('lab-copy-btn').addEventListener('click', () => copyText($('lab-iframe-code').textContent, 'Embed HTML copied'));
-  $('lab-launch-btn').addEventListener('click', () => {
-    const type = $('lab-type').value;
-    const id = $('lab-id').value.trim() || '1148365';
-    const isImdb = /^tt/i.test(id);
-    const season = Number($('lab-season').value) || 1;
-    const episode = Number($('lab-episode').value) || 1;
-    openTitle(
-      {
-        title: `Custom embed (${id})`,
-        tmdbid: isImdb ? '' : id,
-        imdb_id: isImdb ? id : '',
-        type: type === 'movie' ? 'movie' : 'tv'
-      },
-      {
-        autoplay: true,
-        idMode: isImdb ? 'imdb' : 'tmdb',
-        tvFormat: type === 'tv-hyphen' ? 'hyphen' : 'slash',
-        season,
-        episode,
-        startAt: $('lab-start').value.trim()
-      }
-    );
-  });
-  $('clear-log-btn').addEventListener('click', () => ($('postmessage-log').innerHTML = ''));
 
   // Keyboard: Esc closes the topmost overlay
   document.addEventListener('keydown', (e) => {

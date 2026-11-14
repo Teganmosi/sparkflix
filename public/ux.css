@@ -1,0 +1,634 @@
+/* =====================================================================
+   SparkFlix — UX polish layer
+   Loaded after styles.css. Header, navigation, Discover, empty states,
+   Watch Party, API Lab and Live TV refinements for phone and desktop.
+   ===================================================================== */
+
+/* ---------- Header: compact icon buttons ---------- */
+.header-inner {
+  gap: 16px;
+}
+
+.header-left {
+  gap: 22px;
+  min-width: 0;
+}
+
+.header-right {
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Search: an icon that expands into a field (phone and desktop) */
+.search-box,
+.search-box:focus-within {
+  height: 38px;
+  padding: 0 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.search-trigger {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+
+.search-trigger svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.search-input,
+.search-box .search-input {
+  width: 0;
+  padding: 0;
+  font-size: 0.88rem;
+  transition: width 0.25s ease, padding 0.25s ease;
+}
+
+.search-box.expanded,
+.search-box:focus-within {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(10, 10, 14, 0.92);
+}
+
+.search-box.expanded .search-input,
+.search-box:focus-within .search-input {
+  width: 220px;
+  padding: 0 6px 0 2px;
+}
+
+/* Only our own clear button — hide the browser's built-in one */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.search-clear {
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0 8px;
+}
+
+/* Theme + install as matching round icon buttons */
+.icon-btn.theme-btn,
+.pwa-install-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--text-primary);
+}
+
+.icon-btn.theme-btn:hover,
+.pwa-install-btn:hover,
+.search-trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pwa-install-btn .hide-sm {
+  display: none;
+}
+
+.theme-btn .theme-swatch-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--bg-primary);
+  box-shadow: none;
+}
+
+.profile-avatar-btn {
+  margin-left: 4px;
+}
+
+/* Desktop nav: never wrap labels */
+.nav-link {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.desktop-nav {
+  gap: 2px;
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .header-inner {
+    padding: 0 24px;
+  }
+
+  .header-left {
+    gap: 14px;
+  }
+
+  .nav-link {
+    padding: 7px 9px;
+    font-size: 0.82rem;
+  }
+
+  .search-box.expanded .search-input,
+  .search-box:focus-within .search-input {
+    width: 150px;
+  }
+}
+
+@media (max-width: 767px) {
+  .search-box.expanded .search-input,
+  .search-box:focus-within .search-input {
+    width: 150px;
+  }
+
+  .header-right {
+    gap: 2px;
+  }
+}
+
+/* While search is open on small screens, give it the room */
+@media (max-width: 480px) {
+  .top-header:has(.search-box.expanded) .pwa-install-btn,
+  .top-header:has(.search-box.expanded) .theme-dropdown-wrapper {
+    display: none;
+  }
+
+  .top-header:has(.search-box.expanded) .search-box .search-input {
+    width: 190px;
+  }
+}
+
+/* Category pills: spacing for the live dot */
+.cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- Mobile bottom nav: always one row, however many tabs ---------- */
+.mobile-bottom-nav {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.bottom-nav-item {
+  min-width: 0;
+  white-space: nowrap;
+  font-size: 0.64rem;
+  gap: 3px;
+}
+
+.bottom-nav-item svg {
+  width: 21px;
+  height: 21px;
+}
+
+.bottom-nav-item.active {
+  color: var(--text-primary);
+}
+
+/* ---------- Page headers ---------- */
+.section-container {
+  padding-top: 22px;
+}
+
+.page-heading {
+  line-height: 1.05;
+}
+
+.page-subheading {
+  max-width: 640px;
+}
+
+/* ---------- Discover ---------- */
+.discover-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 14px;
+}
+
+.discover-tabs {
+  display: inline-flex;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+}
+
+.discover-tab {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.discover-tab:hover {
+  color: var(--text-primary);
+}
+
+.discover-tab.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.discover-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.toolbar-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  padding: 0 4px 0 14px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.toolbar-field:hover,
+.toolbar-field:focus-within {
+  border-color: var(--border-highlight);
+}
+
+.toolbar-field select {
+  height: 34px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0 8px 0 2px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.toolbar-field select option,
+.discover-advanced select option {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.discover-advanced {
+  margin-left: auto;
+}
+
+.discover-advanced > summary {
+  list-style: none;
+  cursor: pointer;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-highlight);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.discover-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.discover-advanced > summary::before {
+  content: '</>';
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--spark-lime);
+}
+
+.discover-advanced[open] {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+
+.discover-advanced-body {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.discover-advanced-body .api-url-pill {
+  grid-column: 1 / -1;
+}
+
+.discover-advanced-body .api-url-pill code {
+  white-space: nowrap;
+  font-size: 0.74rem;
+}
+
+.discover-status-bar {
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.discover-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 28px 0 8px;
+  min-height: 80px;
+}
+
+.discover-more-spinner {
+  display: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--accent);
+  animation: uxSpin 0.8s linear infinite;
+}
+
+.discover-more.is-loading .discover-more-spinner {
+  display: block;
+}
+
+.discover-more.is-loading #discover-more-btn {
+  display: none;
+}
+
+@keyframes uxSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Denser grids: 3 posters across on phones, like Netflix */
+@media (max-width: 767px) {
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 14px 10px;
+  }
+
+  .media-grid .card-title {
+    font-size: 0.76rem;
+  }
+
+  .media-grid .card-sub {
+    font-size: 0.68rem;
+  }
+
+  .media-grid .poster-fallback-title {
+    font-size: 1.05rem;
+  }
+
+  .discover-head {
+    margin-bottom: 12px;
+  }
+
+  .discover-tabs {
+    width: 100%;
+  }
+
+  .discover-tab {
+    flex: 1;
+    padding: 8px 6px;
+  }
+
+  .toolbar-field {
+    padding-left: 12px;
+  }
+
+  .discover-advanced {
+    margin-left: 0;
+  }
+}
+
+/* ---------- Empty states ---------- */
+.empty-state-rich {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 20px;
+}
+
+.empty-state-rich svg {
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.empty-state-rich h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.empty-state-rich p {
+  max-width: 340px;
+  margin-bottom: 8px;
+}
+
+.empty-state strong {
+  color: var(--text-primary);
+}
+
+/* ---------- Watch Party ---------- */
+.party-header .pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 767px) {
+  .party-header {
+    align-items: stretch;
+  }
+
+  .party-room-controls {
+    width: 100%;
+  }
+
+  .party-room-controls .room-badge {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .party-room-controls > button {
+    flex: 1;
+  }
+
+  .party-control-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .party-title-select select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .party-remote-btns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .party-remote-btns .remote-btn {
+    justify-content: center;
+  }
+}
+
+/* ---------- Player modal ---------- */
+.player-remote-bar .pm-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .modal-back-btn span {
+    display: none;
+  }
+}
+
+/* ---------- API Lab: never overflow on phones ---------- */
+.apilab-grid,
+.apilab-card,
+.builder-form,
+.code-output-box {
+  min-width: 0;
+}
+
+.apilab-card {
+  overflow: hidden;
+}
+
+.code-output-box pre {
+  white-space: pre;
+}
+
+@media (max-width: 560px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header-flex {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ---------- Live TV ---------- */
+.live-stage-badge-bar {
+  max-width: calc(100% - 20px);
+  flex-wrap: nowrap;
+}
+
+.live-onair-pill {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.live-channel-pill {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-card-thumb {
+  background: linear-gradient(135deg, #1a1a23 0%, #2b0c12 100%);
+}
+
+@media (max-width: 767px) {
+  #view-live .api-url-pill {
+    display: none;
+  }
+}
+
+/* ---------- Toasts: centred above the tab bar on phones ---------- */
+@media (max-width: 1023px) {
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    align-items: center;
+  }
+
+  .toast {
+    max-width: 100%;
+    text-align: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .toast-container {
+    bottom: 24px;
+    right: 24px;
+  }
+}
+
+/* ---------- Touch: bigger tap targets, no sticky hover zoom ---------- */
+@media (hover: none) {
+  .media-card:hover {
+    transform: none;
+  }
+
+  .media-card:active {
+    transform: scale(0.97);
+  }
+
+  .card-play-overlay {
+    display: none;
+  }
+}
+
+/* Search never covers the menu: narrower on mid-size screens, and the nav clips instead of overlapping */
+@media (min-width: 1024px) {
+  .header-left {
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .search-box.expanded .search-input,
+  .search-box:focus-within .search-input {
+    width: 150px;
+  }
+}
+
+/* The rounded search box already shows focus; no second outline on the input */
+.search-input:focus,
+.search-input:focus-visible {
+  outline: none;
+}

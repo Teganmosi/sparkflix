@@ -44,8 +44,7 @@ Open **http://localhost:3000**. To try the Watch Party, open the app in two tabs
 | **03 Player parameters** | `?t=90` for plain seconds, `?startAt=1h5m30s` for compound durations, `?theme=HEX`. Auto-resume uses `?t=`. |
 | **04 `postMessage` API** | The listener filters on `e.data?.source === 'vidspark-player'` and checks `e.source`, so each player's events go to the right place. The remote control bar sends `togglePlay`, `seek`, `mute`/`unmute`, `setVolume`, `setSpeed`, `enterFullscreen`, `getStatus`. |
 | **04 `WatchPartyController`** | Syncs play/pause/seek between tabs via `BroadcastChannel`. Also has chat, join/leave presence, a live viewer count, and shared title changes. |
-| **05 Discovery API** | `/api/discover/movies`, `/tv`, `/views` with `page`, `resultsPerPage`, `ordering`, `direction`, `year`, `query`, `slider`, `featured`, `views`, `type`, `tmdbid`, `imdb_id`. The **Discover** page shows the exact request URL. |
-| **API Lab** | An interactive page for the grader: build any embed URL, copy the `<iframe>` code, launch it, and watch `postMessage` events stream in live. |
+| **05 Discovery API** | `/api/discover/movies`, `/tv`, `/views` with `page`, `resultsPerPage`, `ordering`, `direction`, `year`, `query`, `slider`, `featured`, `views`, `type`, `tmdbid`, `imdb_id`. On the **Discover** page, the **API filters** panel shows the exact request URL. |
 
 ### PWA
 - `manifest.json` with app shortcuts, plus iOS/Android standalone meta tags. Installable from the **Install** button.
