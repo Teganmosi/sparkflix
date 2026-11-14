@@ -12,16 +12,28 @@
   "categories": ["entertainment", "video", "movies"],
   "icons": [
     {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
-    },
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
     }
   ],
   "shortcuts": [
@@ -30,14 +42,14 @@
       "short_name": "Matchbox",
       "description": "Play Matchbox the Movie (2026) directly",
       "url": "/?play=1148365&type=movie",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Trending Now",
       "short_name": "Trending",
       "description": "Explore trending movies & series",
       "url": "/?tab=discover",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

@@ -3,8 +3,19 @@
 // - Same-origin requests are network-first (you always get the latest build when online)
 //   with the cache as the offline fallback.
 // - Third-party requests (VidSpark embeds, poster images) are left to the browser.
-const CACHE_NAME = 'sparkflix-v4';
-const APP_SHELL = ['/', '/index.html', '/styles.css', '/ux.css', '/app.js', '/manifest.json', '/icons/icon.svg'];
+const CACHE_NAME = 'sparkflix-v5';
+const APP_SHELL = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/ux.css',
+  '/app.js',
+  '/manifest.json',
+  '/icons/icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
