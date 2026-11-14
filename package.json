@@ -1,0 +1,19 @@
+{
+  "name": "sparkflix-pwa",
+  "version": "1.0.0",
+  "description": "Netflix-style Movie & TV Streaming PWA powered by the VidSpark Embed, postMessage, and Discovery APIs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "vidspark",
+    "netflix-clone",
+    "pwa",
+    "streaming",
+    "school-project"
+  ],
+  "license": "MIT"
+}
+

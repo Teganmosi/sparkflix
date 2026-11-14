@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="netflix">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#09090c" id="meta-theme-color" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SparkFlix" />
+  <meta name="description" content="SparkFlix — Mobile-first Netflix-style streaming PWA built with the VidSpark Embed, postMessage, and Discovery APIs." />
+
+  <title>SparkFlix — Stream Movies &amp; Series</title>
+
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon.svg" />
+
+  <!-- Google Fonts: Inter & Bebas Neue for authentic Netflix display typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-view="home">
+  <!-- Ambient dynamic background glow -->
+  <div class="ambient-backdrop" id="ambient-backdrop"></div>
+
+  <!-- Top Navigation Header (Responsive Mobile & Desktop) -->
+  <header class="top-header" id="top-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a href="#home" class="brand-logo" id="brand-logo" aria-label="SparkFlix Home">
+          <svg class="brand-icon" viewBox="0 0 512 512" width="32" height="32">
+            <rect width="512" height="512" rx="110" fill="#141418" />
+            <path d="M145 104 H222 L194 408 H117 Z" fill="var(--accent-dark, #99040C)" />
+            <path d="M290 104 H367 L395 408 H318 Z" fill="var(--accent-dark, #99040C)" />
+            <path d="M145 104 H230 L395 408 H310 Z" fill="var(--accent, #E50914)" />
+            <circle cx="376" cy="122" r="26" fill="#c8f135" />
+          </svg>
+          <span class="brand-wordmark">SPARKFLIX</span>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="desktop-nav" aria-label="Primary Navigation">
+          <button class="nav-link active" data-nav="home">Home</button>
+          <button class="nav-link" data-nav="discover" data-filter-type="movie">Movies</button>
+          <button class="nav-link" data-nav="discover" data-filter-type="tv">TV Series</button>
+          <button class="nav-link" data-nav="discover" data-filter-type="views">New &amp; Trending</button>
+          <button class="nav-link" data-nav="party">
+            <span class="live-dot"></span>Watch Party
+          </button>
+          <button class="nav-link" data-nav="mylist">My List <span class="badge-count" id="nav-mylist-count">0</span></button>
+          <button class="nav-link" data-nav="apilab">API Lab</button>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <!-- Expandable Search Input -->
+        <div class="search-box" id="search-box">
+          <button class="icon-btn search-trigger" id="search-toggle-btn" aria-label="Search titles or IDs" title="Search titles, TMDB ID, or IMDb ID">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+            </svg>
+          </button>
+          <input
+            type="search"
+            id="global-search-input"
+            class="search-input"
+            placeholder="Titles, or a TMDB / IMDb ID"
+            aria-label="Search titles, or enter a TMDB / IMDb ID and press Enter"
+            autocomplete="off"
+          />
+          <button class="search-clear" id="search-clear-btn" aria-label="Clear search" hidden>&times;</button>
+        </div>
+
+        <!-- Theme Color Swatch Selector (?theme=HEX integration) -->
+        <div class="theme-dropdown-wrapper">
+          <button class="icon-btn theme-btn" id="theme-Menu-btn" aria-label="Customize Player & App Theme Color" title="Player Theme Color (?theme=HEX)">
+            <span class="theme-swatch-dot" id="current-theme-dot"></span>
+            <span class="hide-sm">Theme</span>
+          </button>
+          <div class="theme-popover" id="theme-popover" hidden>
+            <div class="popover-title">Player &amp; UI Accent (<code>?theme=</code>)</div>
+            <div class="theme-swatches">
+              <button class="swatch-btn active" data-hex="E50914" data-name="Netflix Red" style="--swatch:#E50914" title="Netflix Red (#E50914)"></button>
+              <button class="swatch-btn" data-hex="c8f135" data-name="VidSpark Lime" style="--swatch:#c8f135" title="VidSpark Lime (#c8f135)"></button>
+              <button class="swatch-btn" data-hex="16A085" data-name="Emerald Teal" style="--swatch:#16A085" title="Doc Example (#16A085)"></button>
+              <button class="swatch-btn" data-hex="3B82F6" data-name="Cinema Blue" style="--swatch:#3B82F6" title="Cinema Blue (#3B82F6)"></button>
+              <button class="swatch-btn" data-hex="A855F7" data-name="Neon Purple" style="--swatch:#A855F7" title="Neon Purple (#A855F7)"></button>
+              <button class="swatch-btn" data-hex="F59E0B" data-name="Gold Amber" style="--swatch:#F59E0B" title="Gold Amber (#F59E0B)"></button>
+            </div>
+            <div class="custom-hex-row">
+              <span>#</span>
+              <input type="text" id="custom-hex-input" maxlength="6" value="E50914" placeholder="16A085" />
+              <button class="btn-xs" id="apply-hex-btn">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PWA Install Button -->
+        <button class="pwa-install-btn" id="pwa-install-btn" title="Install SparkFlix as a Progressive Web App">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+          </svg>
+          <span class="hide-sm">Install</span>
+        </button>
+
+        <!-- Active profile avatar (opens "Who's watching?") -->
+        <button class="profile-avatar-btn" id="profile-btn" aria-label="Switch profile" title="Switch profile">
+          <span class="profile-avatar sm" id="profile-avatar"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Sticky Category Pills (Netflix Mobile Style) -->
+    <div class="mobile-category-bar" id="mobile-category-bar">
+      <button class="cat-pill active" data-pill="all">For You</button>
+      <button class="cat-pill" data-pill="movies">Movies</button>
+      <button class="cat-pill" data-pill="tv">TV Shows</button>
+      <button class="cat-pill" data-pill="trending">New &amp; Hot</button>
+      <button class="cat-pill" data-pill="mylist">My List</button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="app-main" id="app-main">
+    <!-- ==================== VIEW 1: HOME (NETFLIX STREAMING EXPERIENCE) ==================== -->
+    <section class="view-section active" id="view-home">
+      <!-- Hero Billboard Banner -->
+      <div class="hero-billboard" id="hero-billboard">
+        <div class="hero-backdrop" id="hero-backdrop"></div>
+        <div class="hero-vignette"></div>
+
+        <div class="hero-content">
+          <div class="hero-badges" id="hero-badges">
+            <span class="badge-top10" id="hero-kind">FEATURED FILM</span>
+            <span class="badge-hd" id="hero-quality">HD</span>
+            <span class="badge-year" id="hero-year"></span>
+          </div>
+
+          <img class="hero-logo" id="hero-logo" alt="" hidden />
+          <h1 class="hero-title" id="hero-title"></h1>
+
+          <div class="hero-genre-tags" id="hero-genres"></div>
+
+          <p class="hero-synopsis" id="hero-synopsis"></p>
+
+          <div class="hero-actions">
+            <button class="btn-hero-play" id="hero-play-btn">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M6 4l15 8-15 8z" />
+              </svg>
+              <span>Play Now</span>
+            </button>
+            <button class="btn-hero-info" id="hero-info-btn" title="More info">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>More Info</span>
+            </button>
+            <button class="btn-hero-round" id="hero-mylist-btn" aria-label="Add to My List" title="Add to My List"></button>
+          </div>
+
+          <!-- Hero Carousel Indicators -->
+          <div class="hero-dots" id="hero-dots"></div>
+        </div>
+      </div>
+
+      <!-- Content Rails Container -->
+      <div class="rails-container" id="rails-container">
+        <!-- Continue Watching: filled from vidspark-player timeupdate events, resumed with ?t= -->
+        <section class="media-rail" id="rail-continue" hidden>
+          <div class="rail-header">
+            <h2 class="rail-title">Continue Watching for <span id="continue-profile-name">you</span></h2>
+            <button class="rail-action-btn" id="clear-history-btn">Clear</button>
+          </div>
+          <div class="rail-scroller" id="scroller-continue"></div>
+        </section>
+
+        <!-- Top 10: /api/discover/views?type=movie&views=week -->
+        <section class="media-rail" id="rail-trending">
+          <div class="rail-header">
+            <h2 class="rail-title">Top 10 Movies This Week</h2>
+            <button class="rail-more-btn" data-goto-discover="views">See all &rsaquo;</button>
+          </div>
+          <div class="rail-scroller ranked-scroller" id="scroller-trending"></div>
+        </section>
+
+        <!-- Featured: /api/discover/movies?slider=1&ordering=views -->
+        <section class="media-rail" id="rail-movies">
+          <div class="rail-header">
+            <h2 class="rail-title">Featured Movies</h2>
+            <button class="rail-more-btn" data-goto-discover="movie">See all &rsaquo;</button>
+          </div>
+          <div class="rail-scroller" id="scroller-movies"></div>
+        </section>
+
+        <!-- Series: /api/discover/tv -->
+        <section class="media-rail" id="rail-tv">
+          <div class="rail-header">
+            <h2 class="rail-title">Binge-Worthy TV Shows</h2>
+            <button class="rail-more-btn" data-goto-discover="tv">See all &rsaquo;</button>
+          </div>
+          <div class="rail-scroller" id="scroller-tv"></div>
+        </section>
+
+        <!-- Recently added: /api/discover/movies?ordering=updated_at -->
+        <section class="media-rail" id="rail-2026">
+          <div class="rail-header">
+            <h2 class="rail-title">Recently Added</h2>
+            <button class="rail-more-btn" data-goto-discover="recent">See all &rsaquo;</button>
+          </div>
+          <div class="rail-scroller" id="scroller-2026"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: DISCOVER & SEARCH CATALOG ==================== -->
+    <section class="view-section" id="view-discover">
+      <div class="section-container">
+        <div class="discover-top-bar">
+          <div>
+            <h1 class="page-heading" id="discover-heading">Explore Catalog</h1>
+            <p class="page-subheading">Powered by the VidSpark Discovery REST API</p>
+          </div>
+          <div class="api-url-pill" id="discover-api-pill" title="Active VidSpark Discovery API endpoint">
+            <span class="method-tag">GET</span>
+            <code id="discover-endpoint-display">https://vidspark.to/api/discover/movies?page=1&amp;ordering=views&amp;direction=desc</code>
+          </div>
+        </div>
+
+        <!-- Discovery Filter Controls (Matches Section 05 Query Parameters) -->
+        <div class="discover-filters-card">
+          <div class="filter-group">
+            <label for="filter-endpoint">Endpoint</label>
+            <select id="filter-endpoint">
+              <option value="movies">/api/discover/movies (Movies)</option>
+              <option value="tv">/api/discover/tv (TV Shows)</option>
+              <option value="views">/api/discover/views (Trending Views)</option>
+            </select>
+          </div>
+
+          <div class="filter-group" id="group-ordering">
+            <label for="filter-ordering">Sort By (<code>ordering</code>)</label>
+            <select id="filter-ordering">
+              <option value="views">Total Views (views)</option>
+              <option value="views_week">Weekly Views (views_week)</option>
+              <option value="views_day">Daily Views (views_day)</option>
+              <option value="views_month">Monthly Views (views_month)</option>
+              <option value="year">Release Year (year)</option>
+              <option value="title">Title (title)</option>
+              <option value="updated_at">Recently Updated</option>
+            </select>
+          </div>
+
+          <div class="filter-group" id="group-views-period" hidden>
+            <label for="filter-views-period">Views Period (<code>views</code>)</label>
+            <select id="filter-views-period">
+              <option value="week">This Week (week)</option>
+              <option value="day">Today (day)</option>
+              <option value="month">This Month (month)</option>
+              <option value="total">All Time (total)</option>
+            </select>
+          </div>
+
+          <div class="filter-group" id="group-direction">
+            <label for="filter-direction">Direction</label>
+            <select id="filter-direction">
+              <option value="desc">Descending (desc)</option>
+              <option value="asc">Ascending (asc)</option>
+            </select>
+          </div>
+
+          <div class="filter-group" id="group-year">
+            <label for="filter-year">Year (<code>year</code>)</label>
+            <select id="filter-year">
+              <option value="">All Years</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filter-flags">Curated Flags</label>
+            <select id="filter-flags">
+              <option value="">All Titles</option>
+              <option value="slider">Slider Highlights (slider=1)</option>
+              <option value="featured">Featured Only (featured=1)</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filter-direct-id">Direct TMDB / IMDb ID</label>
+            <div class="inline-id-lookup">
+              <input type="text" id="filter-direct-id" placeholder="e.g. 1148365 or tt28498219" />
+              <button class="btn-accent-sm" id="btn-direct-lookup">Find</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div class="discover-status-bar">
+          <span id="discover-count-label">Loading titles...</span>
+          <div class="pagination-bar">
+            <button class="btn-page" id="prev-page-btn" disabled>&larr; Prev</button>
+            <span class="page-indicator" id="page-indicator">Page 1</span>
+            <button class="btn-page" id="next-page-btn">Next &rarr;</button>
+          </div>
+        </div>
+
+        <div class="media-grid" id="discover-grid"></div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: WATCH PARTY (SECTION 04 CONTROLLER) ==================== -->
+    <section class="view-section" id="view-party">
+      <div class="section-container">
+        <div class="party-header">
+          <div>
+            <span class="pill-tag">SECTION 04 &bull; postMessage SYNC</span>
+            <h1 class="page-heading">Watch Party Studio</h1>
+            <p class="page-subheading">Synchronize <code>play</code>, <code>pause</code>, and <code>seek</code> events across viewers using <code>WatchPartyController</code></p>
+          </div>
+          <div class="party-room-controls">
+            <div class="room-badge">
+              <span class="live-dot"></span>
+              <span>Room: <strong id="party-room-code">SPARK-2026</strong></span>
+            </div>
+            <button class="btn-secondary-sm" id="party-change-room-btn">Change Room</button>
+            <button class="btn-accent-sm" id="party-simulate-peer-btn">Simulate Friend Action</button>
+          </div>
+        </div>
+
+        <div class="party-layout">
+          <div class="party-stage">
+            <div class="party-video-shell">
+              <iframe
+                id="party-iframe"
+                src="about:blank"
+                allowfullscreen
+                allow="autoplay; fullscreen; encrypted-media"
+                title="Watch Party Player"
+              ></iframe>
+            </div>
+
+            <!-- Watch Party Quick Title Switcher & Remote Controls -->
+            <div class="party-control-strip">
+              <div class="party-title-select">
+                <label for="party-movie-picker">Playing:</label>
+                <select id="party-movie-picker">
+                  <option value="movie:1148365:1:1:Matchbox (2026)">Matchbox (2026)</option>
+                  <option value="movie:1368337:1:1:The Odyssey (2026)">The Odyssey (2026)</option>
+                  <option value="movie:533533:1:1:TRON: Ares (2025)">TRON: Ares (2025)</option>
+                  <option value="tv:66732:5:3:Stranger Things S5:E3">Stranger Things — S5:E3</option>
+                  <option value="tv:60625:1:1:Rick and Morty S1:E1">Rick and Morty — S1:E1</option>
+                </select>
+              </div>
+
+              <div class="party-remote-btns">
+                <button class="remote-btn" data-party-cmd="play" title="Broadcast Play">▶ Sync Play</button>
+                <button class="remote-btn" data-party-cmd="pause" title="Broadcast Pause">⏸ Sync Pause</button>
+                <button class="remote-btn" data-party-cmd="seek90" title="Broadcast Seek to 1:30">⏩ Jump 1:30</button>
+                <button class="remote-btn" data-party-cmd="status" title="Request playerstatus">📡 Ping Status</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Watch Party Activity & Chat Sidebar -->
+          <aside class="party-sidebar">
+            <div class="party-sidebar-header">
+              <h3>Party Event Stream &amp; Chat</h3>
+              <span class="peer-count" id="party-peer-count">1 watching</span>
+            </div>
+            <div class="party-feed" id="party-feed"></div>
+            <form class="party-chat-form" id="party-chat-form">
+              <input type="text" id="party-chat-input" placeholder="Send a message or reaction..." autocomplete="off" />
+              <button type="submit" class="btn-accent-sm">Send</button>
+            </form>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: MY LIST ==================== -->
+    <section class="view-section" id="view-mylist">
+      <div class="section-container">
+        <div class="discover-top-bar">
+          <div>
+            <h1 class="page-heading">My List</h1>
+            <p class="page-subheading">Saved movies &amp; series persisted offline on your device</p>
+          </div>
+        </div>
+        <div class="media-grid" id="mylist-grid"></div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 5: INTERACTIVE API LAB (FOR SCHOOL PROJECT PRESENTATION) ==================== -->
+    <section class="view-section" id="view-apilab">
+      <div class="section-container">
+        <div class="discover-top-bar">
+          <div>
+            <span class="pill-tag">SCHOOL PROJECT SHOWCASE</span>
+            <h1 class="page-heading">VidSpark API Interactive Lab</h1>
+            <p class="page-subheading">Test every endpoint, URL parameter, and <code>window.postMessage</code> capability from the documentation</p>
+          </div>
+        </div>
+
+        <div class="apilab-grid">
+          <!-- Card 1: Live Embed URL Builder (Sections 01, 02, 03) -->
+          <div class="apilab-card">
+            <h3>01–03 / Live Embed &amp; Player Parameter Builder</h3>
+            <p class="card-desc">Change the TMDB/IMDb ID, format, season, episode, start timestamp, or hex theme color.</p>
+
+            <div class="builder-form">
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Media Type</label>
+                  <select id="lab-type">
+                    <option value="movie">Movie (/movie/$id)</option>
+                    <option value="tv">TV Series (/tv/$id/$s/$e)</option>
+                    <option value="tv-hyphen">TV Hyphen (/tv/$id-$s-$e)</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>TMDB or IMDb ID (<code>$id</code>)</label>
+                  <input type="text" id="lab-id" value="1148365" placeholder="1148365 or tt28498219" />
+                </div>
+              </div>
+
+              <div class="form-row" id="lab-tv-fields" hidden>
+                <div class="form-field">
+                  <label>Season (<code>$s</code>)</label>
+                  <input type="number" id="lab-season" value="5" min="1" />
+                </div>
+                <div class="form-field">
+                  <label>Episode (<code>$e</code>)</label>
+                  <input type="number" id="lab-episode" value="3" min="1" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Start Time (<code>?t=</code> or <code>?startAt=</code>)</label>
+                  <input type="text" id="lab-start" placeholder="e.g. 90 or 1h5m30s" />
+                </div>
+                <div class="form-field">
+                  <label>Theme Hex (<code>?theme=</code>)</label>
+                  <input type="text" id="lab-theme" value="c8f135" maxlength="6" />
+                </div>
+              </div>
+
+              <div class="code-output-box">
+                <div class="code-box-header">
+                  <span>Generated Embed Code</span>
+                  <button class="btn-xs" id="lab-copy-btn">Copy HTML</button>
+                </div>
+                <pre><code id="lab-iframe-code">&lt;iframe src="https://vidspark.to/movie/1148365?theme=c8f135" width="100%" height="100%" allowfullscreen&gt;&lt;/iframe&gt;</code></pre>
+              </div>
+
+              <button class="btn-hero-play full-width" id="lab-launch-btn">
+                <span>Launch in Main Player Modal</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: postMessage Telemetry & Command Console (Section 04) -->
+          <div class="apilab-card">
+            <div class="card-header-flex">
+              <div>
+                <h3>04 / <code>window.postMessage</code> Live Monitor</h3>
+                <p class="card-desc">Filtered on <code>e.data?.source === 'vidspark-player'</code></p>
+              </div>
+              <button class="btn-xs" id="clear-log-btn">Clear Log</button>
+            </div>
+
+            <div class="telemetry-stats">
+              <div class="stat-box">
+                <span class="stat-label">Last Event</span>
+                <strong class="stat-val" id="stat-event">waiting...</strong>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Current Time</span>
+                <strong class="stat-val" id="stat-time">0.0s</strong>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Duration</span>
+                <strong class="stat-val" id="stat-duration">0.0s</strong>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Progress</span>
+                <strong class="stat-val" id="stat-pct">0%</strong>
+              </div>
+            </div>
+
+            <div class="console-log-box" id="postmessage-log">
+              <div class="log-entry info">[System] Listening for window.postMessage from source: 'vidspark-player'...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== FULL-FEATURED PLAYER & TITLE DETAILS MODAL ==================== -->
+  <div class="player-modal-backdrop" id="player-modal" hidden aria-modal="true" role="dialog">
+    <div class="player-modal-sheet">
+      <!-- Top Bar of Player Modal -->
+      <div class="modal-top-bar">
+        <button class="modal-back-btn" id="modal-close-btn" aria-label="Close player">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          <span>Back to Browse</span>
+        </button>
+
+        <button class="modal-close-x" id="modal-close-x" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- 16:9 stage: shows the backdrop + Play button until playback starts, then the VidSpark iframe -->
+      <div class="video-stage-wrapper" id="video-stage">
+        <iframe
+          id="main-player-iframe"
+          src="about:blank"
+          allowfullscreen
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          title="VidSpark Adaptive Player"
+        ></iframe>
+        <div class="stage-preview" id="stage-preview">
+          <div class="stage-preview-img" id="stage-preview-img"></div>
+          <div class="stage-preview-shade"></div>
+          <button class="stage-play-btn" id="stage-play-btn" aria-label="Play">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M7 4.5l13 7.5-13 7.5z" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom postMessage Player Remote Control Bar (Section 04 Commands) -->
+      <div class="player-remote-bar">
+        <div class="remote-left">
+          <span class="remote-label"><span class="live-dot"></span>postMessage Remote</span>
+          <button class="pm-btn" data-pm-action="togglePlay" title="postMessage({ action: 'togglePlay' })">⏯ Play/Pause</button>
+          <button class="pm-btn" data-pm-action="seek-back" title="Seek -15s">⏪ -15s</button>
+          <button class="pm-btn" data-pm-action="seek-fwd" title="Seek +30s">⏩ +30s</button>
+          <button class="pm-btn" data-pm-action="muteToggle" id="pm-mute-btn" title="postMessage({ action: 'mute' / 'unmute' })">🔊 Mute</button>
+        </div>
+
+        <div class="remote-right">
+          <label class="remote-inline-control" title="postMessage({ action: 'setVolume', volume })">
+            <span>Vol</span>
+            <input type="range" id="pm-volume-slider" min="0" max="1" step="0.05" value="1" />
+          </label>
+
+          <label class="remote-inline-control" title="postMessage({ action: 'setSpeed', rate })">
+            <span>Speed</span>
+            <select id="pm-speed-select">
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1.0x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2.0x</option>
+            </select>
+          </label>
+
+          <button class="pm-btn" data-pm-action="enterFullscreen" title="postMessage({ action: 'enterFullscreen' })">⛶ Fullscreen</button>
+        </div>
+      </div>
+
+      <!-- Modal Details & URL Options Body -->
+      <div class="modal-body-content">
+        <div class="modal-main-info">
+          <h2 class="modal-title" id="modal-title"></h2>
+
+          <div class="modal-meta-row">
+            <span class="match-score" id="modal-rating" hidden></span>
+            <span class="meta-plain" id="modal-year"></span>
+            <span class="meta-plain" id="modal-runtime" hidden></span>
+            <span class="badge-hd" id="modal-quality">HD</span>
+            <span class="meta-plain" id="modal-type"></span>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn-hero-play" id="modal-play-btn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 4l15 8-15 8z" /></svg>
+              <span id="modal-play-label">Play</span>
+            </button>
+            <button class="btn-hero-round" id="modal-mylist-btn" aria-label="Add to My List" title="Add to My List"></button>
+          </div>
+
+          <p class="modal-overview" id="modal-overview"></p>
+          <div class="modal-cast-line" id="modal-genres-line"></div>
+          <div class="modal-cast-line" id="modal-cast-line"></div>
+        </div>
+
+        <!-- Embed configuration (VidSpark sections 01–03): ID type, TV URL format, ?t= / ?startAt= -->
+        <details class="modal-config-panel" id="modal-config-panel">
+          <summary class="config-panel-title">Player options</summary>
+
+          <div class="modal-embed-url-bar">
+            <span class="embed-tag">EMBED</span>
+            <code id="modal-embed-url-text"></code>
+            <button class="btn-xs" id="modal-copy-url-btn" title="Copy embed URL">Copy</button>
+          </div>
+
+          <div class="modal-id-row">
+            <span class="badge-id" id="modal-tmdb-badge"></span>
+            <span class="badge-id" id="modal-imdb-badge"></span>
+          </div>
+
+          <div class="config-controls-grid">
+            <div class="config-field">
+              <label>ID Mode (<code>$id</code>)</label>
+              <div class="segmented-control" id="id-mode-toggle">
+                <button class="seg-btn active" data-id-mode="tmdb">TMDB ID</button>
+                <button class="seg-btn" data-id-mode="imdb">IMDb ID</button>
+              </div>
+            </div>
+
+            <div class="config-field" id="tv-url-format-field" hidden>
+              <label>TV Endpoint Format</label>
+              <div class="segmented-control" id="tv-format-toggle">
+                <button class="seg-btn active" data-tv-format="slash">/tv/$id/$s/$e</button>
+                <button class="seg-btn" data-tv-format="hyphen">/tv/$id-$s-$e</button>
+              </div>
+            </div>
+
+            <div class="config-field">
+              <label>Jump to Time (<code>?t=</code> / <code>?startAt=</code>)</label>
+              <div class="inline-time-jump">
+                <input type="text" id="modal-start-input" placeholder="90 or 1h5m30s" />
+                <button class="btn-accent-sm" id="modal-apply-time-btn">Load</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-quick-actions">
+            <button class="btn-secondary-sm" id="modal-watchparty-btn">Open in Watch Party</button>
+          </div>
+        </details>
+
+        <!-- TV Series Season & Episode Selector (Shown automatically for TV Series) -->
+        <div class="episodes-section" id="modal-episodes-section" hidden>
+          <div class="episodes-header">
+            <h3>Episodes</h3>
+            <div class="season-picker-wrap">
+              <label for="modal-season-select">Season</label>
+              <select id="modal-season-select"></select>
+            </div>
+          </div>
+          <div class="episodes-list" id="modal-episodes-list"></div>
+        </div>
+
+        <!-- Similar / More Like This Grid -->
+        <div class="more-like-this-section">
+          <h3>More Like This</h3>
+          <div class="media-grid compact-grid" id="modal-similar-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PWA INSTALL GUIDE SHEET ==================== -->
+  <div class="pwa-modal-backdrop" id="pwa-guide-modal" hidden>
+    <div class="pwa-modal-card">
+      <div class="pwa-modal-header">
+        <div class="pwa-app-badge">
+          <img src="/icons/icon.svg" alt="SparkFlix Icon" width="48" height="48" />
+          <div>
+            <h3>Install SparkFlix PWA</h3>
+            <p>Full-screen mobile app experience &bull; Works offline</p>
+          </div>
+        </div>
+        <button class="modal-close-x" id="pwa-modal-close">&times;</button>
+      </div>
+      <div class="pwa-steps">
+        <div class="pwa-step">
+          <span class="step-num">1</span>
+          <div>
+            <strong>On iOS (Safari)</strong>
+            <p>Tap the <strong>Share</strong> button at the bottom of Safari, then select <strong>"Add to Home Screen"</strong>.</p>
+          </div>
+        </div>
+        <div class="pwa-step">
+          <span class="step-num">2</span>
+          <div>
+            <strong>On Android (Chrome)</strong>
+            <p>Tap the three-dot menu or the install prompt banner and tap <strong>"Install app"</strong>.</p>
+          </div>
+        </div>
+        <div class="pwa-step">
+          <span class="step-num">3</span>
+          <div>
+            <strong>On Desktop (Chrome / Edge)</strong>
+            <p>Click the <strong>Install SparkFlix</strong> icon in the address bar to launch in a standalone window.</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn-hero-play full-width" id="pwa-native-trigger-btn">Got It</button>
+    </div>
+  </div>
+
+  <!-- ==================== MOBILE BOTTOM NAVIGATION BAR ==================== -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <button class="bottom-nav-item active" data-nav="home">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1V9.5z"/>
+      </svg>
+      <span>Home</span>
+    </button>
+    <button class="bottom-nav-item" data-nav="discover">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+      <span>Discover</span>
+    </button>
+    <button class="bottom-nav-item" data-nav="party">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      <span>Party</span>
+    </button>
+    <button class="bottom-nav-item" data-nav="mylist">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+      </svg>
+      <span>My List</span>
+    </button>
+    <button class="bottom-nav-item" data-nav="apilab">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="16 18 22 12 16 6"/>
+        <polyline points="8 6 2 12 8 18"/>
+      </svg>
+      <span>API Lab</span>
+    </button>
+  </nav>
+
+  <!-- ==================== PROFILE GATE ("Who's watching?") ==================== -->
+  <div class="profile-gate" id="profile-gate" hidden>
+    <div class="profile-gate-inner">
+      <h1 class="profile-gate-title">Who's watching?</h1>
+      <div class="profile-grid" id="profile-grid"></div>
+      <p class="profile-gate-note">Each profile keeps its own My List and Continue Watching on this device.</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+
