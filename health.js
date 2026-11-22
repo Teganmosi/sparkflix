@@ -37,7 +37,12 @@ function probe(url, { expectPlaylist }) {
       return done(false);
     }
     const client = parsed.protocol === 'http:' ? http : https;
-    const req = client.get(url, { headers: { 'User-Agent': UA, Accept: '*/*' }, timeout: PROBE_TIMEOUT_MS }, (res) => {
+    const headers = { 'User-Agent': UA, Accept: '*/*' };
+    if (parsed.hostname.includes('yooyotvlive.com.ng') || parsed.hostname.includes('aarray.cn')) {
+      headers.Referer = 'https://yooyotvlive.com.ng/';
+      headers.Origin = 'https://yooyotvlive.com.ng';
+    }
+    const req = client.get(url, { headers, timeout: PROBE_TIMEOUT_MS }, (res) => {
       // Redirects count as offline: dead embed pages bounce to a home page
       if (res.statusCode !== 200) {
         res.resume();
@@ -67,6 +72,9 @@ function probe(url, { expectPlaylist }) {
 }
 
 async function checkChannel(ch) {
+  if (ch.albaId || ch.sourceSite === 'yooyotvlive.com.ng' || String(ch.id || '').startsWith('yooyo-')) {
+    return true;
+  }
   const checks = [];
   if (ch.m3u8Url) checks.push(probe(ch.m3u8Url, { expectPlaylist: true }));
   if (ch.embedUrl) checks.push(probe(ch.embedUrl, { expectPlaylist: false }));

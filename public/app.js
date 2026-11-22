@@ -299,9 +299,9 @@ const state = {
     returnFocus: null
   },
   live: {
-    // Filled from /api/live/channels, which only returns channels that pass a server-side health check
-    channels: null,
-    ready: false,
+    // Always start with built-in channels (including YooyoTV) visible immediately
+    channels: [...FALLBACK_LIVE_CHANNELS],
+    ready: true,
     loading: null,
     customChannels: storage.get('sparkflix:live_custom', []),
     activeChannel: null,
@@ -1515,17 +1515,25 @@ function loadLiveChannels({ forceRefresh = false } = {}) {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.channels)) {
-          // The server already removed channels that failed its health check
-          state.live.channels = data.channels;
+          // Ensure YooyoTV channels from FALLBACK_LIVE_CHANNELS are always present
+          const incoming = [...data.channels];
+          const seenIds = new Set(incoming.map((c) => c.id));
+          FALLBACK_LIVE_CHANNELS.forEach((fb) => {
+            const isYooyo = fb.albaId || fb.sourceSite === 'yooyotvlive.com.ng' || String(fb.id || '').startsWith('yooyo-');
+            if (isYooyo && !seenIds.has(fb.id)) {
+              incoming.unshift(fb);
+            }
+          });
+          state.live.channels = incoming;
           loaded = true;
         }
       }
     } catch (_) {
       /* offline or server unreachable: fall back below */
     }
-    if (!loaded && !state.live.channels) {
-      // No server: offer only the official 24/7 broadcaster streams from the built-in list
-      state.live.channels = FALLBACK_LIVE_CHANNELS.filter((ch) => ch.m3u8Url && !ch.albaId);
+    if (!loaded || !state.live.channels || state.live.channels.length === 0) {
+      // Offer all built-in channels including YooyoTV
+      state.live.channels = [...FALLBACK_LIVE_CHANNELS];
     }
     state.live.ready = true;
     state.live.loading = null;

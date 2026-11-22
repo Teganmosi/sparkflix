@@ -785,8 +785,3 @@
 .card-sub {
   gap: 4px;
 }
-
-/* Live TV: the raw request URL is a developer detail; keep it out of the page */
-#view-live .api-url-pill {
-  display: none;
-}

@@ -489,7 +489,9 @@ const server = http.createServer(async (req, res) => {
       data = { result: true, updatedAt: new Date().toISOString(), channels: DEFAULT_LIVE_CHANNELS };
     }
     const checked = await liveHealth.annotate(data.channels || []);
-    const online = checked.filter((ch) => ch.online);
+    const isYooyo = (ch) =>
+      Boolean(ch.albaId || ch.sourceSite === 'yooyotvlive.com.ng' || String(ch.id || '').startsWith('yooyo-'));
+    const online = checked.filter((ch) => ch.online || isYooyo(ch));
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(
       JSON.stringify({
