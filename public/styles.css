@@ -2221,8 +2221,13 @@ body[data-view="home"] .app-main {
   min-width: 0;
 }
 
-/* Title-treatment logos come in all colours; render them white so they read on any backdrop */
+/* Title-treatment logos keep their real colours; only logos flagged as too dark
+   for the backdrop (logoWhite in SPOTLIGHT_HEROES) are rendered white */
 .hero-logo {
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75));
+}
+
+.hero-logo.logo-white {
   filter: brightness(0) invert(1) drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7));
 }
 

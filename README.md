@@ -17,7 +17,39 @@ cd sparkflix
 node server.js
 ```
 
-Open **http://localhost:3000**. To try the Watch Party, open the app in two tabs.
+Open **http://localhost:3000**. To try the Watch Party, start a party on one device and scan its QR code
+with another (or open the invite link in a second browser).
+
+---
+
+## Standout features
+
+### 1. Cross-device Watch Party
+Watch the same title in sync with friends on **any phone or laptop**, not just tabs in one browser.
+- **Start** a party (pick a name and a title) or **join** with a 6-character code. Invite friends with a
+  **link, a QR code, or the phone's native share sheet**. Invite links open straight into the room.
+- When anyone plays, pauses or skips, it happens for everyone, through the VidSpark `postMessage` API.
+- **Late joiners catch up:** the server remembers the room's title and position, so someone joining
+  mid-film starts at the right moment (via `?t=`), not at 0:00.
+- **Live chat**, **floating emoji reactions** over the video, avatars of who's watching, join/leave
+  notices, unread-message badges, and automatic reconnection.
+- Built on **Server-Sent Events** with no external dependencies (`party.js` server, `public/party-client.js` client).
+
+### 2. Personalised recommendations
+Each profile gets its own **"Top picks for you"** and **"Because you watched …"** rows.
+- First visit: tap a few genres under *What are you in the mood for?*. Rows appear instantly.
+- SparkFlix then learns from behaviour: opening a title (weight 1), adding to My List (3) and pressing
+  Play (4). Signals fade with a **two-week half-life**, so recent taste matters most.
+- Candidates come from genre catalogs and are scored by **genre affinity + shared cast (×1.5) + shared
+  director (×2) + rating**. The score is shown as a **"% match"**, and each row says why
+  ("Because you like Sci-Fi & Comedy").
+- The **Kids** profile only ever gets Family/Animation picks. Logic lives in `public/personal.js`.
+
+### 3. Live TV that never shows a dead stream
+The server **health-checks every channel every 5 minutes** (`health.js`): HLS streams must return a real
+`#EXTM3U` playlist and embed players must load without redirecting. Only channels that pass are shown,
+the player waits for the checked list before autoplaying, and if a stream drops mid-watch an
+**offline panel** offers "Try another channel" instead of a black screen.
 
 ---
 
@@ -43,7 +75,7 @@ Open **http://localhost:3000**. To try the Watch Party, open the app in two tabs
 | **01/02 Movie & TV embeds** | `buildVidSparkEmbedUrl()` in `app.js`. Supports `/movie/$id`, `/tv/$id/$s/$e`, and the hyphen form `/tv/$id-$s-$e`, with TMDB **or** IMDb IDs (toggle under *Player options*). |
 | **03 Player parameters** | `?t=90` for plain seconds, `?startAt=1h5m30s` for compound durations, `?theme=HEX`. Auto-resume uses `?t=`. |
 | **04 `postMessage` API** | The listener filters on `e.data?.source === 'vidspark-player'` and checks `e.source`, so each player's events go to the right place. The remote control bar sends `togglePlay`, `seek`, `mute`/`unmute`, `setVolume`, `setSpeed`, `enterFullscreen`, `getStatus`. |
-| **04 `WatchPartyController`** | Syncs play/pause/seek between tabs via `BroadcastChannel`. Also has chat, join/leave presence, a live viewer count, and shared title changes. |
+| **04 Watch Party sync** | `public/party-client.js` turns local player events (`play`, `pause`, `seeked`) into room messages, and applies other viewers' actions with `play` / `pause` / `seek` commands. Commands are sent only to the `https://vidspark.to` origin, and only messages from that origin and our own iframe are trusted. |
 | **05 Discovery API** | `/api/discover/movies`, `/tv`, `/views` with `page`, `resultsPerPage`, `ordering`, `direction`, `year`, `query`, `slider`, `featured`, `views`, `type`, `tmdbid`, `imdb_id`. On the **Discover** page, the **API filters** panel shows the exact request URL. |
 
 ### PWA
@@ -56,15 +88,23 @@ Open **http://localhost:3000**. To try the Watch Party, open the app in two tabs
 ## Architecture
 
 ```
-Browser (public/)                          Node server (server.js)              Upstream
-┌──────────────────────────┐   /api/discover/*   ┌───────────────────────┐   ┌──────────────────────┐
-│ index.html  – layout     │ ──────────────────▶ │ proxy + 10-min cache  │──▶│ vidspark.to Discovery │
-│ styles.css  – design     │   /api/meta/:t/:id  │                       │   └──────────────────────┘
-│ app.js      – all logic  │ ──────────────────▶ │ proxy + 10-min cache  │──▶ Cinemeta (metadata)
-│ sw.js       – offline    │                     │ static files + SPA    │
-└──────────┬───────────────┘                     └───────────────────────┘
+Browser (public/)                              Node server                         Upstream
+┌─────────────────────────────┐  /api/discover/*   ┌──────────────────────────┐   ┌───────────────────────┐
+│ app.js         – core UI    │ ─────────────────▶ │ server.js  proxy + cache │──▶│ vidspark.to Discovery │
+│ personal.js    – for-you    │  /api/meta, /api/catalog                      │   └───────────────────────┘
+│ party-client.js– watch party│ ─────────────────▶ │            proxy + cache │──▶ Cinemeta (metadata, genres)
+│ welcome.js     – onboarding │  /api/party/* (SSE)│ party.js   rooms in RAM  │
+│ sw.js          – offline    │ ◀════════════════▶ │                          │
+└──────────┬──────────────────┘  /api/live/channels│ health.js  5-min checks  │──▶ 24/7 live HLS broadcasters
+           │                                       └──────────────────────────┘
            │ <iframe src="https://vidspark.to/movie/…">   ◀── postMessage events / commands ──▶
 ```
+
+**Watch Party protocol.** Each viewer keeps one Server-Sent Events stream open
+(`GET /api/party/:code/events`) and sends actions with `POST /api/party/:code/send`
+(`cmd`, `title`, `chat`, `react`). The server validates every message: room codes, ids and
+reaction types are checked, text is length-limited, and each viewer is limited to 8 messages
+per second. It broadcasts each message to the rest of the room.
 
 **Why a server proxy?** It avoids browser CORS problems, caches responses for fast reloads, and
 gives the app one origin to talk to. If the app is hosted as static files with no server, `app.js`
@@ -72,7 +112,10 @@ falls back to calling the VidSpark API directly.
 
 ### Engineering notes
 - **Security:** every API-supplied string is HTML-escaped (`escapeHtml`) before insertion, which prevents XSS from catalog data. The static server blocks path traversal.
-- **Watch Party echo guard:** applying a peer's "play" makes our own player emit a "play" event. Without a guard that event would be re-broadcast forever between tabs. The controller ignores its own player's events for 1.5 s after applying a remote command.
+- **Watch Party echo guard:** applying a friend's "play" makes our own player emit a "play" event. Without a guard that event would be re-broadcast forever between devices. The client ignores its own player's events for 1.5 s after applying a remote command.
+- **Clock-skew-safe catch-up:** every server message carries `serverNow`, so late joiners and play commands correct for network delay and device clock differences.
+- **Never cache streams:** the service worker skips `/api/party/` and `text/event-stream` requests, because caching an endless stream would hang.
+- **Tested end-to-end:** the server suite drives two simulated viewers through a room (presence, chat, sync, late join, validation, flood limits); a browser suite runs two separate browsers as two devices joining through an invite link.
 - **Race-safe search:** each Discover request gets an ID, and stale responses from earlier keystrokes are dropped.
 - **Telemetry throttling:** `timeupdate` fires several times per second. Progress is saved every 10 s, plus immediately on pause, seek and end.
 - **Accessibility:** keyboard-operable cards (Enter/Space), `Esc` closes overlays, focus returns to where you were, visible focus rings, `aria-live` toasts, and `prefers-reduced-motion` support.
@@ -80,9 +123,14 @@ falls back to calling the VidSpark API directly.
 ## File overview
 | File | Purpose |
 |---|---|
-| `server.js` | Static file server, API proxies, response cache |
+| `server.js` | Static file server, API proxies, response cache, `/healthz` |
+| `party.js` | Watch Party rooms over Server-Sent Events |
+| `health.js` | Live channel health checks |
 | `public/index.html` | Page structure for all views and overlays |
-| `public/app.js` | State, data fetching, rendering, player, Watch Party, profiles |
-| `public/styles.css` | Mobile-first responsive design |
+| `public/app.js` | State, data fetching, rendering, player, profiles, Live TV |
+| `public/party-client.js` | Watch Party client: rooms, sync, chat, reactions, invites/QR |
+| `public/personal.js` | Taste profile and recommendation scoring |
+| `public/welcome.js` | First-visit welcome sheet |
+| `public/styles.css`, `ux.css`, `party.css` | Mobile-first responsive design |
 | `public/sw.js` | Service worker (offline app shell) |
 | `public/manifest.json` | PWA manifest |

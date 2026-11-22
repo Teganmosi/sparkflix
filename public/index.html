@@ -24,6 +24,7 @@
 
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/ux.css" />
+  <link rel="stylesheet" href="/party.css" />
 </head>
 <body data-view="home">
   <!-- Ambient dynamic background glow -->
@@ -192,6 +193,43 @@
           <div class="rail-scroller" id="scroller-continue"></div>
         </section>
 
+        <!-- Personalised rows (personal.js): built from this profile's viewing, My List and genre picks -->
+        <section class="media-rail taste-rail" id="rail-taste-picker" hidden>
+          <div class="rail-header">
+            <div>
+              <h2 class="rail-title">What are you in the mood for?</h2>
+              <p class="rail-reason">Pick a few genres. SparkFlix learns from everything you watch, too.</p>
+            </div>
+            <button class="rail-action-btn" id="taste-done-btn" hidden>Done</button>
+          </div>
+          <div class="taste-chips" id="taste-chips"></div>
+        </section>
+
+        <section class="media-rail personal-rail" id="rail-foryou" hidden>
+          <div class="rail-header">
+            <div>
+              <h2 class="rail-title">Top picks for <span id="foryou-name">you</span></h2>
+              <p class="rail-reason" id="foryou-reason"></p>
+            </div>
+            <button class="rail-action-btn" id="taste-edit-btn">Edit tastes</button>
+          </div>
+          <div class="rail-scroller" id="scroller-foryou"></div>
+        </section>
+
+        <section class="media-rail personal-rail" id="rail-because-0" hidden>
+          <div class="rail-header">
+            <h2 class="rail-title" id="because-title-0"></h2>
+          </div>
+          <div class="rail-scroller" id="scroller-because-0"></div>
+        </section>
+
+        <section class="media-rail personal-rail" id="rail-because-1" hidden>
+          <div class="rail-header">
+            <h2 class="rail-title" id="because-title-1"></h2>
+          </div>
+          <div class="rail-scroller" id="scroller-because-1"></div>
+        </section>
+
         <!-- Top 10: /api/discover/views?type=movie&views=week -->
         <section class="media-rail" id="rail-trending">
           <div class="rail-header">
@@ -345,68 +383,125 @@
     <!-- ==================== VIEW 3: WATCH PARTY (SECTION 04 CONTROLLER) ==================== -->
     <section class="view-section" id="view-party">
       <div class="section-container">
-        <div class="party-header">
-          <div>
+        <!-- Lobby: start or join a room -->
+        <div class="party-lobby" id="party-lobby">
+          <div class="party-lobby-hero">
             <span class="pill-tag"><span class="live-dot"></span> WATCH TOGETHER</span>
             <h1 class="page-heading">Watch Party</h1>
-            <p class="page-subheading">Play, pause and skip stay in sync for everyone in the room. Open SparkFlix in another tab or device to join.</p>
+            <p class="page-subheading">
+              Watch in sync with friends on any phone or laptop. When anyone plays, pauses or skips, it happens for
+              everyone. Chat and send reactions while you watch.
+            </p>
           </div>
-          <div class="party-room-controls">
-            <div class="room-badge">
-              <span class="live-dot"></span>
-              <span>Room: <strong id="party-room-code">SPARK-2026</strong></span>
-            </div>
-            <button class="btn-secondary-sm" id="party-change-room-btn">Change Room</button>
-            <button class="btn-accent-sm" id="party-simulate-peer-btn">Try a demo friend</button>
+
+          <div class="party-lobby-cards">
+            <form class="party-card" id="party-start-form">
+              <div class="party-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5.5l11 6.5-11 6.5z"/></svg>
+              </div>
+              <h2>Start a party</h2>
+              <p>Pick something to watch, then share the link or QR code.</p>
+              <label class="party-field">
+                <span>Your name</span>
+                <input type="text" id="party-name-input" maxlength="24" autocomplete="nickname" required />
+              </label>
+              <label class="party-field">
+                <span>Watch</span>
+                <select id="party-start-picker">
+                  <option value="movie:1368337:1:1:The Odyssey">The Odyssey (2026)</option>
+                  <option value="movie:1148365:1:1:Matchbox">Matchbox (2026)</option>
+                  <option value="movie:533533:1:1:TRON: Ares">TRON: Ares (2025)</option>
+                  <option value="tv:66732:5:3:Stranger Things S5:E3">Stranger Things: S5:E3</option>
+                  <option value="tv:60625:1:1:Rick and Morty S1:E1">Rick and Morty: S1:E1</option>
+                </select>
+              </label>
+              <button class="btn-hero-play full-width" type="submit">Start party</button>
+            </form>
+
+            <form class="party-card" id="party-join-form">
+              <div class="party-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+              </div>
+              <h2>Join a party</h2>
+              <p>Got a code from a friend? Enter it here. Invite links join automatically.</p>
+              <label class="party-field">
+                <span>Party code</span>
+                <input type="text" id="party-code-input" class="party-code-input" placeholder="K7Q2PM" maxlength="8"
+                  autocapitalize="characters" autocomplete="off" spellcheck="false" required />
+              </label>
+              <button class="btn-secondary-sm full-width party-join-btn" type="submit">Join party</button>
+            </form>
           </div>
+
+          <ol class="party-how">
+            <li><strong>Start</strong> a party and choose what to watch</li>
+            <li><strong>Invite</strong> friends with a link, code or QR code</li>
+            <li><strong>Watch together.</strong> Playback, chat and reactions stay in sync</li>
+          </ol>
         </div>
 
-        <div class="party-layout">
-          <div class="party-stage">
-            <div class="party-video-shell">
-              <iframe
-                id="party-iframe"
-                src="about:blank"
-                allowfullscreen
-                allow="autoplay; fullscreen; encrypted-media"
-                title="Watch Party Player"
-              ></iframe>
+        <!-- Room -->
+        <div class="party-room" id="party-room" hidden>
+          <div class="party-room-bar">
+            <div class="party-room-info">
+              <span class="pill-tag"><span class="live-dot"></span> ROOM <span id="party-room-code"></span></span>
+              <h1 class="party-room-title" id="party-now-playing"></h1>
             </div>
-
-            <!-- Watch Party Quick Title Switcher & Remote Controls -->
-            <div class="party-control-strip">
-              <div class="party-title-select">
-                <label for="party-movie-picker">Playing:</label>
-                <select id="party-movie-picker">
-                  <option value="movie:1148365:1:1:Matchbox (2026)">Matchbox (2026)</option>
-                  <option value="movie:1368337:1:1:The Odyssey (2026)">The Odyssey (2026)</option>
-                  <option value="movie:533533:1:1:TRON: Ares (2025)">TRON: Ares (2025)</option>
-                  <option value="tv:66732:5:3:Stranger Things S5:E3">Stranger Things — S5:E3</option>
-                  <option value="tv:60625:1:1:Rick and Morty S1:E1">Rick and Morty — S1:E1</option>
-                </select>
-              </div>
-
-              <div class="party-remote-btns">
-                <button class="remote-btn" data-party-cmd="play" title="Play for everyone">Play all</button>
-                <button class="remote-btn" data-party-cmd="pause" title="Pause for everyone">Pause all</button>
-                <button class="remote-btn" data-party-cmd="seek90" title="Everyone jumps to 1:30">Jump to 1:30</button>
-                <button class="remote-btn" data-party-cmd="status" title="Ask the player for its status (getStatus)">Player status</button>
-              </div>
+            <div class="party-room-actions">
+              <div class="party-avatars" id="party-avatars"></div>
+              <button class="btn-accent-sm" id="party-invite-btn">Invite</button>
+              <button class="btn-secondary-sm" id="party-leave-btn">Leave</button>
             </div>
           </div>
 
-          <!-- Watch Party Activity & Chat Sidebar -->
-          <aside class="party-sidebar">
-            <div class="party-sidebar-header">
-              <h3>Party Event Stream &amp; Chat</h3>
-              <span class="peer-count" id="party-peer-count">1 watching</span>
+          <div class="party-layout">
+            <div class="party-stage">
+              <div class="party-video-shell">
+                <iframe
+                  id="party-iframe"
+                  src="about:blank"
+                  allowfullscreen
+                  allow="autoplay; fullscreen; encrypted-media"
+                  title="Watch Party player"
+                ></iframe>
+                <div class="party-reaction-layer" id="party-reaction-layer" aria-hidden="true"></div>
+                <div class="party-connection" id="party-connection" hidden>Connecting…</div>
+              </div>
+
+              <div class="party-reaction-bar" id="party-reaction-bar" aria-label="Send a reaction"></div>
+
+              <div class="party-control-strip">
+                <label class="party-title-select">
+                  <span>Watching</span>
+                  <select id="party-title-picker">
+                    <option value="movie:1368337:1:1:The Odyssey">The Odyssey (2026)</option>
+                    <option value="movie:1148365:1:1:Matchbox">Matchbox (2026)</option>
+                    <option value="movie:533533:1:1:TRON: Ares">TRON: Ares (2025)</option>
+                    <option value="tv:66732:5:3:Stranger Things S5:E3">Stranger Things: S5:E3</option>
+                    <option value="tv:60625:1:1:Rick and Morty S1:E1">Rick and Morty: S1:E1</option>
+                  </select>
+                </label>
+                <div class="party-remote-btns">
+                  <button class="remote-btn" data-party-cmd="back" title="Everyone goes back 10 seconds">−10s</button>
+                  <button class="remote-btn" data-party-cmd="play" title="Play for everyone">Play all</button>
+                  <button class="remote-btn" data-party-cmd="pause" title="Pause for everyone">Pause all</button>
+                  <button class="remote-btn" data-party-cmd="fwd" title="Everyone skips 10 seconds">+10s</button>
+                </div>
+              </div>
             </div>
-            <div class="party-feed" id="party-feed"></div>
-            <form class="party-chat-form" id="party-chat-form">
-              <input type="text" id="party-chat-input" placeholder="Send a message or reaction..." autocomplete="off" />
-              <button type="submit" class="btn-accent-sm">Send</button>
-            </form>
-          </aside>
+
+            <aside class="party-sidebar">
+              <div class="party-sidebar-header">
+                <h3>Chat</h3>
+                <span class="peer-count" id="party-peer-count">1 watching</span>
+              </div>
+              <div class="party-feed" id="party-feed" aria-live="polite"></div>
+              <form class="party-chat-form" id="party-chat-form">
+                <input type="text" id="party-chat-input" placeholder="Say something…" maxlength="300" autocomplete="off" />
+                <button type="submit" class="btn-accent-sm">Send</button>
+              </form>
+            </aside>
+          </div>
         </div>
       </div>
     </section>
@@ -429,10 +524,10 @@
       <div class="section-container">
         <div class="discover-top-bar">
           <div>
-            <span class="pill-tag"><span class="live-pulse-dot"></span> LIVE BROADCAST &bull; HLS (.m3u8) &amp; ALBAPLAYER</span>
-            <h1 class="page-heading">Live Sports &amp; TV Hub</h1>
+            <span class="pill-tag"><span class="live-pulse-dot"></span> ON AIR NOW</span>
+            <h1 class="page-heading">Live TV</h1>
             <p class="page-subheading">
-              Auto-synced feeds from <code>yooyotvlive.com.ng</code> (RenRen TiYu / AlbaPlayer) + 24/7 HD HLS channels
+              News, sport and space from 24/7 broadcasters. SparkFlix checks every channel and only shows the ones on air right now.
             </p>
           </div>
           <div class="live-top-actions">
@@ -440,8 +535,8 @@
               <span class="method-tag">GET</span>
               <code id="live-active-source-display">/api/live/channels</code>
             </div>
-            <button class="btn-secondary-sm" id="live-refresh-btn" title="Refresh live feeds from upstream">
-              &#8635; Refresh Feeds
+            <button class="btn-secondary-sm" id="live-refresh-btn" title="Check which channels are on air">
+              &#8635; Refresh
             </button>
           </div>
         </div>
@@ -474,21 +569,29 @@
                 <span class="live-onair-pill"><span class="live-pulse-dot"></span> <span id="live-playing-badge">LIVE</span></span>
                 <span class="live-channel-pill" id="live-playing-title">Select a channel</span>
               </div>
+
+              <!-- Shown instead of a black screen when a stream can't play -->
+              <div class="live-offline" id="live-offline" hidden role="status">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 8.8a15 15 0 0120 0M5 12.6a10 10 0 0114 0M8.5 16.4a5 5 0 017 0"/><path d="M3 3l18 18"/></svg>
+                <strong id="live-offline-msg">This channel is offline right now.</strong>
+                <span>Live streams come and go. Another channel should be on air.</span>
+                <button class="btn-hero-play" id="live-offline-next">Try another channel</button>
+              </div>
             </div>
 
             <!-- Player Engine Switcher & Stream Controls -->
             <div class="live-control-strip">
               <div class="live-engine-group">
-                <span class="live-strip-label">Player Mode:</span>
+                <span class="live-strip-label">Playback</span>
                 <div class="segmented-control" id="live-engine-toggle">
-                  <button class="seg-btn active" data-live-engine="hls" title="Play raw .m3u8 stream directly with hls.js">
-                    HLS (.m3u8) Direct
+                  <button class="seg-btn active" data-live-engine="hls" title="Play the stream directly (HLS)">
+                    Standard
                   </button>
-                  <button class="seg-btn" data-live-engine="proxy" title="Proxy .m3u8 via server.js with Referer headers">
-                    HLS Server Proxy
+                  <button class="seg-btn" data-live-engine="proxy" title="Play through the SparkFlix server if the standard player is blocked">
+                    Backup server
                   </button>
-                  <button class="seg-btn" data-live-engine="embed" title="Embed yooyotvlive.com.ng AlbaPlayer iframe">
-                    YooyoTV Embed (AlbaPlayer)
+                  <button class="seg-btn" data-live-engine="embed" title="Use the channel's own web player">
+                    Alternate player
                   </button>
                 </div>
               </div>
@@ -500,11 +603,11 @@
                     <option value="-1">Auto (Adaptive)</option>
                   </select>
                 </label>
-                <button class="remote-btn" id="live-copy-stream-btn" title="Copy active .m3u8 or embed URL">
-                  Copy Stream URL
+                <button class="remote-btn" id="live-copy-stream-btn" title="Copy this stream's link">
+                  Copy link
                 </button>
                 <button class="remote-btn" id="live-fullscreen-btn" title="Toggle Fullscreen">
-                  &#9974; Fullscreen
+                  Fullscreen
                 </button>
               </div>
             </div>
@@ -512,25 +615,25 @@
             <!-- Custom .m3u8 / AlbaPlayer Channel Loader -->
             <div class="live-custom-loader-card">
               <div class="live-loader-header">
-                <strong>Load Custom <code>.m3u8</code> Link or YooyoTV Channel ID</strong>
-                <span class="live-loader-hint">Paste any <code>https://...m3u8</code> link (e.g. <code>play.aarray.cn/rrty/...</code>) or AlbaPlayer ID (e.g. <code>test-1</code>)</span>
+                <strong>Add your own channel</strong>
+                <span class="live-loader-hint">Paste a live stream link (it usually ends in <code>.m3u8</code>) to play it or save it to your guide.</span>
               </div>
               <form class="live-custom-form" id="live-custom-form">
                 <input
                   type="text"
                   id="live-custom-title"
                   class="live-input-sm"
-                  placeholder="Channel Label (optional)"
+                  placeholder="Name (optional)"
                 />
                 <input
                   type="text"
                   id="live-custom-url"
                   class="live-input-url"
-                  placeholder="https://play.aarray.cn/rrty/hd-zh-1-4518097_gqzm.m3u8?auth_key=... or test-1"
+                  placeholder="https://example.com/live/stream.m3u8"
                   required
                 />
-                <button type="submit" class="btn-accent-sm">&#9654; Play Now</button>
-                <button type="button" class="btn-secondary-sm" id="live-save-custom-btn">+ Save Channel</button>
+                <button type="submit" class="btn-accent-sm">Play</button>
+                <button type="button" class="btn-secondary-sm" id="live-save-custom-btn">Save to guide</button>
               </form>
             </div>
           </div>
@@ -538,8 +641,8 @@
           <!-- Right Sidebar: Quick Channel Guide -->
           <aside class="live-guide-sidebar">
             <div class="live-guide-header">
-              <h3>Live Channels Guide</h3>
-              <span class="peer-count" id="live-channel-count">8 channels</span>
+              <h3>Channel guide</h3>
+              <span class="peer-count" id="live-channel-count"></span>
             </div>
             <div class="live-cat-tabs" id="live-cat-tabs">
               <button class="live-cat-tab active" data-live-cat="all">All</button>
@@ -797,6 +900,29 @@
     </button>
   </nav>
 
+  <!-- ==================== WATCH PARTY INVITE SHEET ==================== -->
+  <div class="pwa-modal-backdrop" id="party-invite-modal" hidden role="dialog" aria-modal="true" aria-labelledby="party-invite-title">
+    <div class="pwa-modal-card party-invite-card">
+      <div class="pwa-modal-header">
+        <div>
+          <h3 id="party-invite-title">Invite friends</h3>
+          <p class="party-invite-sub">Scan the code, share the link, or tell them the party code.</p>
+        </div>
+        <button class="modal-close-x" id="party-invite-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="party-qr" id="party-qr"></div>
+      <div class="party-invite-code-wrap">
+        <span>Party code</span>
+        <strong class="party-invite-code" id="party-invite-code"></strong>
+      </div>
+      <div class="party-invite-link">
+        <input type="text" id="party-invite-link" readonly aria-label="Invite link" />
+        <button class="btn-secondary-sm" id="party-copy-link-btn">Copy</button>
+      </div>
+      <button class="btn-hero-play full-width" id="party-share-btn" hidden>Share invite</button>
+    </div>
+  </div>
+
   <!-- ==================== PROFILE GATE ("Who's watching?") ==================== -->
   <div class="profile-gate" id="profile-gate" hidden>
     <div class="profile-gate-inner">
@@ -806,12 +932,63 @@
     </div>
   </div>
 
+  <!-- ==================== FIRST-VISIT WELCOME ==================== -->
+  <div class="pwa-modal-backdrop welcome-backdrop" id="welcome-modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+    <div class="pwa-modal-card welcome-card">
+      <div class="welcome-head">
+        <img src="/icons/icon.svg" alt="" width="52" height="52" />
+        <div>
+          <h2 id="welcome-title">Welcome to SparkFlix</h2>
+          <p>Three things to try first:</p>
+        </div>
+      </div>
+
+      <button class="welcome-feature" data-welcome="party">
+        <span class="welcome-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </span>
+        <span class="welcome-text">
+          <strong>Watch together, on any device</strong>
+          <span>Start a Watch Party and invite friends with a QR code. Playback, chat and reactions stay in sync.</span>
+        </span>
+        <span class="welcome-chev" aria-hidden="true">&rsaquo;</span>
+      </button>
+
+      <button class="welcome-feature" data-welcome="taste">
+        <span class="welcome-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        </span>
+        <span class="welcome-text">
+          <strong>Picks made for you</strong>
+          <span>Choose a few genres. Each profile gets its own recommendations that learn as you watch.</span>
+        </span>
+        <span class="welcome-chev" aria-hidden="true">&rsaquo;</span>
+      </button>
+
+      <button class="welcome-feature" data-welcome="live">
+        <span class="welcome-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M17 2l-5 5-5-5"/></svg>
+        </span>
+        <span class="welcome-text">
+          <strong>Live TV, always on</strong>
+          <span>News, sport and space from 24/7 broadcasters. Only channels that are on air are shown.</span>
+        </span>
+        <span class="welcome-chev" aria-hidden="true">&rsaquo;</span>
+      </button>
+
+      <button class="btn-hero-play full-width" id="welcome-start">Start browsing</button>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
 
   <!-- hls.js for playing .m3u8 live streams on desktop/Android browsers -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
   <script src="/app.js"></script>
+  <script src="/party-client.js"></script>
+  <script src="/personal.js"></script>
+  <script src="/welcome.js"></script>
 </body>
 </html>
 

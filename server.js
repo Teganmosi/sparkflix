@@ -4,8 +4,17 @@ const zlib = require('zlib');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const { handlePartyRequest } = require('./party');
+const liveHealth = require('./health');
 
 const PORT = process.env.PORT || 3000;
+
+// Genres Cinemeta's "top" catalogs accept (used by /api/catalog for recommendations)
+const CATALOG_GENRES = [
+  'Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime', 'Documentary', 'Drama',
+  'Family', 'Fantasy', 'History', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Sport', 'Thriller',
+  'War', 'Western'
+];
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Simple in-memory response cache for fast UI reloads
@@ -404,7 +413,7 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
 const server = http.createServer(async (req, res) => {
   // Enable CORS for local dev and webviews
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
 
   if (req.method === 'OPTIONS') {
@@ -416,23 +425,74 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
-  // 1. Live TV & Sports API: /api/live/channels
+  // 0a. Cheap health endpoint for uptime pings (keeps the free Render instance awake)
+  if (pathname === '/healthz') {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end('ok');
+    return;
+  }
+
+  // 0b. Watch Party rooms (Server-Sent Events): /api/party/:code[/events|/send]
+  if (pathname.startsWith('/api/party/') && handlePartyRequest(req, res, pathname, parsedUrl.searchParams)) {
+    return;
+  }
+
+  // 0c. Recommendation catalog: /api/catalog/:movie|tv/:genre → trimmed Cinemeta "top" list
+  if (pathname.startsWith('/api/catalog/')) {
+    const parts = pathname.split('/').filter(Boolean); // ['api','catalog',type,genre]
+    const type = parts[2] === 'tv' || parts[2] === 'series' ? 'series' : 'movie';
+    const genre = decodeURIComponent(parts[3] || '');
+    if (!CATALOG_GENRES.includes(genre)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unknown genre' }));
+      return;
+    }
+    try {
+      const data = await fetchRemoteJson(
+        `https://v3-cinemeta.strem.io/catalog/${type}/top/genre=${encodeURIComponent(genre)}.json`,
+        8000
+      );
+      const metas = (data.metas || []).map((m) => ({
+        imdb_id: m.imdb_id || m.id,
+        tmdbid: m.moviedb_id ? String(m.moviedb_id) : '',
+        title: m.name,
+        year: m.year || m.releaseInfo || '',
+        type: type === 'series' ? 'tv' : 'movie',
+        genres: m.genres || m.genre || [],
+        cast: (m.cast || []).slice(0, 6),
+        director: Array.isArray(m.director) ? m.director.slice(0, 2) : [],
+        rating: m.imdbRating || '',
+        poster: m.poster ? m.poster.replace('/poster/small/', '/poster/medium/') : ''
+      }));
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=1800' });
+      res.end(JSON.stringify({ genre, type, metas }));
+    } catch (err) {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Catalog unavailable', metas: [] }));
+    }
+    return;
+  }
+
+  // 1. Live TV & Sports API: /api/live/channels — only channels that pass a health check
   if (pathname === '/api/live/channels') {
     const forceRefresh = parsedUrl.searchParams.get('refresh') === '1';
+    let data;
     try {
-      const data = await discoverYooyoLiveChannels(forceRefresh);
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(data));
+      data = await discoverYooyoLiveChannels(forceRefresh);
     } catch (err) {
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(
-        JSON.stringify({
-          result: true,
-          updatedAt: new Date().toISOString(),
-          channels: DEFAULT_LIVE_CHANNELS
-        })
-      );
+      data = { result: true, updatedAt: new Date().toISOString(), channels: DEFAULT_LIVE_CHANNELS };
     }
+    const checked = await liveHealth.annotate(data.channels || []);
+    const online = checked.filter((ch) => ch.online);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(
+      JSON.stringify({
+        ...data,
+        channels: online,
+        offlineCount: checked.length - online.length,
+        checkedAt: new Date().toISOString()
+      })
+    );
     return;
   }
 
@@ -610,6 +670,11 @@ const server = http.createServer(async (req, res) => {
     });
   });
 });
+
+// Warm up the live-channel health checks so the first visitor gets an instant, filtered list
+discoverYooyoLiveChannels()
+  .then((data) => liveHealth.refresh(data.channels || []))
+  .catch(() => liveHealth.refresh(DEFAULT_LIVE_CHANNELS));
 
 server.listen(PORT, () => {
   console.log(`\n🎬 SparkFlix (VidSpark Netflix PWA + Live Sports Hub) running at:`);

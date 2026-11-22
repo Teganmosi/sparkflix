@@ -3,7 +3,7 @@
  *
  *  01/02  Movie & TV embeds        /movie/$id, /tv/$id/$s/$e, /tv/$id-$s-$e
  *  03     Player parameters        ?t=, ?startAt=, ?theme=  (+ auto-resume)
- *  04     window.postMessage API   player telemetry, remote commands, WatchPartyController
+ *  04     window.postMessage API   player telemetry + remote commands (Watch Party: party-client.js)
  *  05     Discovery API            /api/discover/movies | tv | views
  *
  * Metadata (synopsis, cast, runtime, rating, artwork, episode lists) comes from
@@ -28,6 +28,7 @@ const SPOTLIGHT_HEROES = [
   },
   {
     title: 'The Odyssey',
+    logoWhite: true, // its official logo is dark navy; render white for contrast
     tmdbid: '1368337',
     imdb_id: 'tt33764258',
     year: 2026,
@@ -297,13 +298,11 @@ const state = {
     seasonsMap: {},
     returnFocus: null
   },
-  watchParty: {
-    roomCode: 'SPARK-2026',
-    controller: null,
-    loaded: false
-  },
   live: {
-    channels: [...FALLBACK_LIVE_CHANNELS],
+    // Filled from /api/live/channels, which only returns channels that pass a server-side health check
+    channels: null,
+    ready: false,
+    loading: null,
     customChannels: storage.get('sparkflix:live_custom', []),
     activeChannel: null,
     engine: 'hls', // 'hls' | 'proxy' | 'embed'
@@ -510,7 +509,9 @@ function createMediaCard(rawItem, options = {}) {
     }
     <div class="card-info">
       <div class="card-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
-      <div class="card-sub">${escapeHtml(sub)}</div>
+      <div class="card-sub">${
+        options.matchPct ? `<span class="card-match">${Number(options.matchPct)}% match</span> · ` : ''
+      }${escapeHtml(options.matchPct ? item.year || typeLabel : sub)}</div>
     </div>
   `;
 
@@ -717,6 +718,7 @@ function paintHero(hero) {
   // Prefer the official title-treatment logo (like Netflix); fall back to the text title
   const logo = $('hero-logo');
   const title = $('hero-title');
+  logo.classList.toggle('logo-white', !!hero.logoWhite);
   if (hero.logoUrl) {
     logo.onload = () => {
       logo.hidden = false;
@@ -915,6 +917,7 @@ function openTitle(rawItem, opts = {}) {
 
   if (modal.hidden) m.returnFocus = document.activeElement;
   m.item = item;
+  if (typeof Personal !== 'undefined' && !/^Custom embed/.test(item.title)) Personal.record(item, 'view');
   m.idMode = opts.idMode || (item.tmdbid ? 'tmdb' : 'imdb');
   m.tvFormat = opts.tvFormat || 'slash';
   m.season = Number(opts.season || item.season || 1);
@@ -1003,6 +1006,7 @@ function startPlayback() {
   }
   m.isPlaying = true;
   m.lastSavedAt = 0;
+  if (typeof Personal !== 'undefined') Personal.record(m.item, 'play');
   $('main-player-iframe').src = currentEmbedUrl();
   updateEmbedUrlDisplay();
   $('player-modal').classList.add('is-playing');
@@ -1210,167 +1214,6 @@ function removeContinueProgress(uid) {
   storage.set(profileKey('continue'), state.continueWatching);
 }
 
-// ==================== SECTION 04: WatchPartyController ====================
-// Syncs play / pause / seek between tabs (BroadcastChannel). When we apply a peer's
-// command, the player will echo a play/pause event back to us — `suppressUntil`
-// stops us from re-broadcasting that echo and starting an infinite ping-pong.
-class WatchPartyController {
-  constructor(iframeElement, handlers = {}) {
-    this.iframe = iframeElement;
-    this.handlers = handlers;
-    this.peerId = Math.random().toString(36).slice(2, 8);
-    this.peers = new Map();
-    this.suppressUntil = 0;
-    this.currentTime = 0;
-    this.channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('sparkflix_watch_party') : null;
-    this.setupEventListeners();
-  }
-
-  get room() {
-    return state.watchParty.roomCode;
-  }
-
-  send(msg) {
-    if (this.channel) this.channel.postMessage({ room: this.room, from: this.peerId, ...msg });
-  }
-
-  syncPlay(time) {
-    this.broadcastToParty({ action: 'play', time });
-  }
-
-  syncPause(time) {
-    this.broadcastToParty({ action: 'pause', time });
-  }
-
-  syncSeek(time) {
-    this.broadcastToParty({ action: 'seek', time });
-  }
-
-  broadcastToParty(command) {
-    this.send({ kind: 'cmd', ...command });
-    this.activity(
-      `You → ${command.action}${command.time !== undefined ? ` @ ${formatSeconds(command.time)}` : ''}`,
-      'sync'
-    );
-  }
-
-  handlePartyCommand(command, fromName = 'Friend') {
-    this.suppressUntil = Date.now() + 1500;
-    const win = this.iframe && this.iframe.contentWindow;
-    if (win) {
-      if (command.time !== undefined && command.action !== 'seek') {
-        win.postMessage({ action: 'seek', time: command.time }, '*');
-      }
-      win.postMessage(
-        command.action === 'seek' ? { action: 'seek', time: command.time } : { action: command.action },
-        '*'
-      );
-    }
-    this.activity(
-      `${fromName} → ${command.action}${command.time !== undefined ? ` @ ${formatSeconds(command.time)}` : ''}`,
-      'sync'
-    );
-  }
-
-  shareTitle(title) {
-    this.send({ kind: 'title', title });
-  }
-
-  chat(text) {
-    this.send({ kind: 'chat', text });
-  }
-
-  announce(kind = 'hello') {
-    this.send({ kind });
-  }
-
-  activity(text, type) {
-    if (this.handlers.onActivity) this.handlers.onActivity(text, type);
-  }
-
-  updatePeers() {
-    const cutoff = Date.now() - 12000;
-    for (const [id, seen] of this.peers) if (seen < cutoff) this.peers.delete(id);
-    if (this.handlers.onPeers) this.handlers.onPeers(this.peers.size + 1);
-  }
-
-  setupEventListeners() {
-    window.addEventListener('message', (e) => {
-      if (e.data?.source !== 'vidspark-player') return;
-      if (!this.iframe || e.source !== this.iframe.contentWindow) return;
-      if (e.data.currentTime !== undefined) this.currentTime = Number(e.data.currentTime);
-      if (Date.now() < this.suppressUntil) return; // echo of a command we just applied
-      switch (e.data.event) {
-        case 'play':
-          this.syncPlay(e.data.currentTime);
-          break;
-        case 'pause':
-          this.syncPause(e.data.currentTime);
-          break;
-        case 'seeked':
-          this.syncSeek(e.data.currentTime);
-          break;
-      }
-    });
-
-    if (this.channel) {
-      this.channel.addEventListener('message', (e) => {
-        const msg = e.data || {};
-        if (msg.room !== this.room || msg.from === this.peerId) return;
-        const name = `Guest-${msg.from}`;
-        const isNew = !this.peers.has(msg.from);
-        if (msg.kind === 'bye') {
-          this.peers.delete(msg.from);
-          this.activity(`${name} left`, 'info');
-        } else {
-          this.peers.set(msg.from, Date.now());
-          if (isNew && msg.kind !== 'bye') this.activity(`${name} joined`, 'info');
-        }
-        if (msg.kind === 'hello') this.announce('here');
-        if (msg.kind === 'cmd') this.handlePartyCommand(msg, name);
-        if (msg.kind === 'chat') this.activity(`${name}: ${msg.text}`, 'chat');
-        if (msg.kind === 'title' && this.handlers.onTitle) this.handlers.onTitle(msg.title, name);
-        this.updatePeers();
-      });
-      setInterval(() => {
-        this.announce('here');
-        this.updatePeers();
-      }, 5000);
-      window.addEventListener('pagehide', () => this.announce('bye'));
-    }
-  }
-}
-
-function addPartyFeedMessage(text, type = 'chat') {
-  const feed = $('party-feed');
-  const msg = document.createElement('div');
-  msg.className = `party-msg ${type}`;
-  msg.textContent = text;
-  feed.appendChild(msg);
-  feed.scrollTop = feed.scrollHeight;
-}
-
-function loadPartyTitle(title, { announce = true } = {}) {
-  const url = buildVidSparkEmbedUrl({
-    type: title.type,
-    id: title.id,
-    season: title.season,
-    episode: title.episode
-  });
-  $('party-iframe').src = url;
-  state.watchParty.loaded = true;
-  state.watchParty.title = title;
-  if (announce) {
-    addPartyFeedMessage(`Now playing: ${title.label}`, 'sync');
-    state.watchParty.controller.shareTitle(title);
-  }
-}
-
-function parsePartyOption(value) {
-  const [type, id, season, episode, ...rest] = value.split(':');
-  return { type, id, season: Number(season) || 1, episode: Number(episode) || 1, label: rest.join(':') };
-}
-
 // ==================== MY LIST ====================
 function isInMyList(uid) {
   return state.myList.some((x) => x.uid === uid);
@@ -1384,6 +1227,7 @@ function toggleMyList(rawItem) {
   } else {
     state.myList.unshift(toStoredItem(item));
     showToast(`Added “${item.title}” to My List`);
+    if (typeof Personal !== 'undefined') Personal.record(item, 'list');
   }
   storage.set(profileKey('mylist'), state.myList);
   updateMyListCount();
@@ -1470,6 +1314,7 @@ function selectProfile(id) {
   syncMyListButtons();
   renderContinueWatchingRail();
   if (state.currentView === 'mylist') renderMyListView();
+  if (typeof Personal !== 'undefined') Personal.refresh(); // each profile has its own taste
 }
 
 // ==================== THEME (?theme=HEX) ====================
@@ -1508,7 +1353,29 @@ function applyThemeHex(rawHex, { silent = false } = {}) {
 // ==================== LIVE SPORTS & TV HUB (HLS .m3u8 + YOOYOTV ALBAPLAYER) ====================
 function getAllLiveChannels() {
   const custom = (state.live.customChannels || []).map((c) => ({ ...c, isCustom: true }));
-  return [...custom, ...(state.live.channels || FALLBACK_LIVE_CHANNELS)];
+  return [...custom, ...(state.live.channels || [])];
+}
+
+// Shown over the live player when a stream can't be played (instead of a black screen)
+function showLiveOffline(message) {
+  const panel = $('live-offline');
+  if (!panel) return;
+  $('live-offline-msg').textContent = message || 'This channel is offline right now.';
+  const others = getAllLiveChannels().filter((c) => !state.live.activeChannel || c.id !== state.live.activeChannel.id);
+  $('live-offline-next').hidden = others.length === 0;
+  panel.hidden = false;
+}
+
+function hideLiveOffline() {
+  const panel = $('live-offline');
+  if (panel) panel.hidden = true;
+}
+
+function playNextLiveChannel() {
+  const all = getAllLiveChannels();
+  if (!all.length) return;
+  const i = state.live.activeChannel ? all.findIndex((c) => c.id === state.live.activeChannel.id) : -1;
+  playLiveChannel(all[(i + 1) % all.length], { autoplay: true });
 }
 
 function getFilteredLiveChannels() {
@@ -1589,8 +1456,14 @@ function renderLiveHubLists() {
   if (countEl) countEl.textContent = `${all.length} channels`;
 
   guideEl.innerHTML = '';
-  if (filtered.length === 0) {
-    guideEl.innerHTML = `<div class="live-guide-empty">No channels in this category yet. Use the form below the player to save custom <code>.m3u8</code> or AlbaPlayer feeds.</div>`;
+  if (!state.live.ready) {
+    guideEl.innerHTML = `<div class="live-guide-empty"><span class="discover-more-spinner live-inline-spinner"></span>Checking which channels are on air…</div>`;
+    if (countEl) countEl.textContent = '';
+  } else if (filtered.length === 0) {
+    guideEl.innerHTML =
+      state.live.category === 'custom' || state.live.category === 'saved'
+        ? `<div class="live-guide-empty">No saved channels yet. Add your own stream link below the player.</div>`
+        : `<div class="live-guide-empty">No channels in this category are on air right now. Check back soon.</div>`;
   } else {
     filtered.forEach((ch) => {
       const item = document.createElement('div');
@@ -1631,25 +1504,36 @@ function renderLiveHubLists() {
   all.forEach((ch) => gridEl.appendChild(createLiveBroadcastCard(ch)));
 }
 
-async function loadLiveChannels({ forceRefresh = false } = {}) {
-  renderLiveHomeRail();
+function loadLiveChannels({ forceRefresh = false } = {}) {
+  if (state.live.loading && !forceRefresh) return state.live.loading;
   renderLiveHubLists();
 
-  try {
-    const res = await fetch(`/api/live/channels${forceRefresh ? '?refresh=1' : ''}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.channels) && data.channels.length) {
-        state.live.channels = data.channels;
+  state.live.loading = (async () => {
+    let loaded = false;
+    try {
+      const res = await fetch(`/api/live/channels${forceRefresh ? '?refresh=1' : ''}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.channels)) {
+          // The server already removed channels that failed its health check
+          state.live.channels = data.channels;
+          loaded = true;
+        }
       }
+    } catch (_) {
+      /* offline or server unreachable: fall back below */
     }
-  } catch (_) {
-    /* keep FALLBACK_LIVE_CHANNELS */
-  }
-
-  renderLiveHomeRail();
-  renderLiveHubLists();
-  if (forceRefresh) showToast('Synced live channels from yooyotvlive.com.ng & HLS feeds');
+    if (!loaded && !state.live.channels) {
+      // No server: offer only the official 24/7 broadcaster streams from the built-in list
+      state.live.channels = FALLBACK_LIVE_CHANNELS.filter((ch) => ch.m3u8Url && !ch.albaId);
+    }
+    state.live.ready = true;
+    state.live.loading = null;
+    renderLiveHomeRail();
+    renderLiveHubLists();
+    if (forceRefresh) showToast(`${state.live.channels.length} channels on air`);
+  })();
+  return state.live.loading;
 }
 
 function stopLivePlayback() {
@@ -1661,6 +1545,7 @@ function stopLivePlayback() {
   }
   const video = $('live-hls-video');
   if (video) {
+    video.onerror = null; // clearing the source can fire 'error'; don't let it trigger a retry
     video.pause();
     video.removeAttribute('src');
     video.load();
@@ -1690,6 +1575,7 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
     state.live.engine = 'hls';
   }
 
+  hideLiveOffline();
   $('live-playing-title').textContent = channel.title;
   $('live-playing-badge').textContent = channel.badge || 'LIVE';
   syncLiveEngineButtons();
@@ -1780,17 +1666,22 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
       if (!data.fatal) return;
       // Automatic fallback cascade: Direct HLS -> Server Proxy HLS -> YooyoTV AlbaPlayer Embed
       if (mode === 'hls') {
-        showToast('Direct .m3u8 token/CORS blocked — retrying via SparkFlix Server Proxy…');
+        showToast('Reconnecting through the SparkFlix server…');
         playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
       } else if (channel.embedUrl || channel.albaId) {
-        showToast('Switching to YooyoTV AlbaPlayer Embed for live token refresh…');
+        showToast('Trying this channel’s backup player…');
         playLiveChannel(channel, { engineOverride: 'embed', autoplay: true });
       } else {
-        showToast('Stream temporarily unavailable or auth_key expired');
+        showLiveOffline(`${channel.title} is offline right now.`);
       }
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     // Native HLS on iOS / macOS Safari
+    video.onerror = () => {
+      if (state.live.activeChannel !== channel) return;
+      if (mode === 'hls') playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
+      else showLiveOffline(`${channel.title} is offline right now.`);
+    };
     video.src = playUrl;
     if (autoplay) video.play().catch(() => {});
   } else if (channel.embedUrl) {
@@ -1916,14 +1807,17 @@ function switchView(viewName, options = {}) {
     loadDiscoverGrid();
   } else if (viewName === 'live') {
     renderLiveHubLists();
-    const initialChannel = state.live.activeChannel || getAllLiveChannels()[0];
-    if (initialChannel) {
-      playLiveChannel(initialChannel, { autoplay: true });
-    }
+    // Wait for the health-checked channel list before autoplaying anything
+    Promise.resolve(state.live.ready ? null : loadLiveChannels()).then(() => {
+      if (state.currentView !== 'live') return;
+      const initialChannel = state.live.activeChannel || getAllLiveChannels()[0];
+      if (initialChannel) playLiveChannel(initialChannel, { autoplay: true });
+      else showLiveOffline('No channels are on air right now. Check back soon.');
+    });
   } else if (viewName === 'mylist') {
     renderMyListView();
-  } else if (viewName === 'party' && !state.watchParty.loaded) {
-    loadPartyTitle(parsePartyOption($('party-movie-picker').value), { announce: false });
+  } else if (viewName === 'party' && typeof Party !== 'undefined') {
+    Party.onEnterView();
   }
 
   syncNavHighlight();
@@ -1967,24 +1861,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  // Watch party
-  state.watchParty.controller = new WatchPartyController($('party-iframe'), {
-    onActivity: addPartyFeedMessage,
-    onPeers: (n) => ($('party-peer-count').textContent = `${n} watching`),
-    onTitle: (title, from) => {
-      addPartyFeedMessage(`${from} switched to ${title.label}`, 'sync');
-      const picker = $('party-movie-picker');
-      const match = [...picker.options].find((o) => parsePartyOption(o.value).id === String(title.id));
-      if (match) picker.value = match.value;
-      loadPartyTitle(title, { announce: false });
-    }
-  });
-  state.watchParty.controller.announce('hello');
-  addPartyFeedMessage(
-    `Welcome to room ${state.watchParty.roomCode}. Open SparkFlix in a second tab to watch together.`,
-    'info'
-  );
-
   // Navigation
   document.querySelectorAll('[data-nav]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -2016,6 +1892,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('live-refresh-btn')) {
     $('live-refresh-btn').addEventListener('click', () => loadLiveChannels({ forceRefresh: true }));
   }
+  $('live-offline-next').addEventListener('click', playNextLiveChannel);
   document.querySelectorAll('#live-engine-toggle .seg-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const engine = btn.dataset.liveEngine;
@@ -2073,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('live-save-custom-btn').addEventListener('click', () => {
       const ch = buildCustomChannelFromInput($('live-custom-url').value, $('live-custom-title').value);
       if (!ch) {
-        showToast('Paste a .m3u8 URL or YooyoTV channel ID first');
+        showToast('Paste a live stream link first');
         return;
       }
       saveCustomLiveChannel(ch);
@@ -2279,8 +2156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = m.item;
     if (!item) return;
     closePlayerModal();
-    switchView('party');
-    loadPartyTitle({
+    Party.watchTitle({
       type: item.type,
       id: item.tmdbid || item.imdb_id,
       season: m.season,
@@ -2313,49 +2189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendPlayerCommand(mainIframe, { action: 'setSpeed', rate: Number(e.target.value) })
   );
 
-  // Watch party controls
-  const partyIframe = $('party-iframe');
-  const party = state.watchParty.controller;
-  $('party-movie-picker').addEventListener('change', (e) => loadPartyTitle(parsePartyOption(e.target.value)));
-  document.querySelectorAll('[data-party-cmd]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const cmd = btn.dataset.partyCmd;
-      if (cmd === 'play') {
-        sendPlayerCommand(partyIframe, { action: 'play' });
-        party.syncPlay(party.currentTime);
-      } else if (cmd === 'pause') {
-        sendPlayerCommand(partyIframe, { action: 'pause' });
-        party.syncPause(party.currentTime);
-      } else if (cmd === 'seek90') {
-        sendPlayerCommand(partyIframe, { action: 'seek', time: 90 });
-        party.syncSeek(90);
-      } else if (cmd === 'status') {
-        sendPlayerCommand(partyIframe, { action: 'getStatus' });
-        addPartyFeedMessage('Requested player status (getStatus)', 'info');
-      }
-    });
-  });
-  $('party-simulate-peer-btn').addEventListener('click', () => {
-    party.handlePartyCommand({ action: 'seek', time: 120 }, 'Demo friend');
-  });
-  $('party-change-room-btn').addEventListener('click', () => {
-    party.announce('bye');
-    state.watchParty.roomCode = `SPARK-${Math.floor(1000 + Math.random() * 9000)}`;
-    party.peers.clear();
-    party.updatePeers();
-    $('party-room-code').textContent = state.watchParty.roomCode;
-    addPartyFeedMessage(`Switched to room ${state.watchParty.roomCode}`, 'info');
-    party.announce('hello');
-  });
-  $('party-chat-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const input = $('party-chat-input');
-    const txt = input.value.trim();
-    if (!txt) return;
-    addPartyFeedMessage(`You: ${txt}`, 'chat');
-    party.chat(txt);
-    input.value = '';
-  });
+  // (Watch Party controls are wired up in party-client.js)
 
   // Keyboard: Esc closes the topmost overlay
   document.addEventListener('keydown', (e) => {

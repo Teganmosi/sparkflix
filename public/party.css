@@ -1,0 +1,531 @@
+/* =====================================================================
+   SparkFlix Watch Party — lobby, room, chat, reactions, invite sheet
+   (behaviour in party-client.js, server in party.js)
+   ===================================================================== */
+
+/* ---------- Lobby ---------- */
+.party-lobby-hero {
+  margin-bottom: 22px;
+}
+
+.party-lobby-hero .pill-tag,
+.party-room-info .pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.party-lobby-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  max-width: 880px;
+}
+
+.party-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, var(--bg-elevated), var(--bg-secondary));
+  border: 1px solid var(--border-subtle);
+}
+
+.party-card h2 {
+  font-size: 1.25rem;
+}
+
+.party-card p {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  margin-top: -6px;
+}
+
+.party-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 24px var(--accent-glow);
+}
+
+.party-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.party-field input,
+.party-field select {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-highlight);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.party-field input:focus,
+.party-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.party-code-input {
+  font-family: var(--font-mono);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 1.2rem !important;
+  text-align: center;
+}
+
+.party-join-btn {
+  height: 44px;
+  margin-top: auto;
+  font-size: 0.92rem;
+}
+
+.party-card .btn-hero-play {
+  margin-top: auto;
+}
+
+.party-how {
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  max-width: 880px;
+  margin-top: 22px;
+  padding: 0;
+}
+
+.party-how li {
+  counter-increment: step;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.party-how li::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.party-how strong {
+  color: var(--text-primary);
+}
+
+/* ---------- Room header ---------- */
+.party-room-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.party-room-info {
+  min-width: 0;
+}
+
+.party-room-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#party-room-code {
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+.party-room-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.party-avatars {
+  display: flex;
+  margin-right: 6px;
+}
+
+.party-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--avatar, #555);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: 2px solid var(--bg-primary);
+  margin-left: -8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.party-avatars .party-avatar:first-child {
+  margin-left: 0;
+}
+
+.party-avatar.more {
+  background: var(--bg-elevated);
+  font-size: 0.72rem;
+}
+
+.party-avatar.sm {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  font-size: 0.75rem;
+  border-width: 0;
+}
+
+/* ---------- Stage, reactions ---------- */
+.party-video-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.party-reaction-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.party-float {
+  position: absolute;
+  bottom: 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: partyFloat 2.8s ease-out forwards;
+}
+
+.party-float-emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+.party-float-name {
+  margin-top: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@keyframes partyFloat {
+  0% { transform: translate(0, 20px) scale(0.6); opacity: 0; }
+  12% { transform: translate(0, 0) scale(1.15); opacity: 1; }
+  25% { transform: translate(0, -20px) scale(1); }
+  100% { transform: translate(var(--drift, 0), -260px) scale(1); opacity: 0; }
+}
+
+.party-connection {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--border-highlight);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.party-reaction-bar {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.party-react-btn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.party-react-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.15);
+}
+
+.party-react-btn:active {
+  transform: scale(0.9);
+}
+
+.party-title-select {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.party-title-select select {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ---------- Chat ---------- */
+.party-chat-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.party-chat-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 4px 12px 12px 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.party-chat-line.mine {
+  flex-direction: row-reverse;
+}
+
+.party-chat-line.mine .party-chat-body {
+  border-radius: 12px 4px 12px 12px;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.party-chat-name {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.party-chat-text {
+  font-size: 0.86rem;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.party-feed .party-msg.info {
+  align-self: center;
+  border-left: none;
+  background: transparent;
+  padding: 2px 8px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.party-chat-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Unread chat badge on the Party nav item */
+[data-nav="party"] {
+  position: relative;
+}
+
+.party-unread {
+  position: absolute;
+  top: 2px;
+  right: 50%;
+  margin-right: -22px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.desktop-nav .party-unread {
+  top: -2px;
+  right: -4px;
+  margin-right: 0;
+}
+
+/* ---------- Invite sheet ---------- */
+.pwa-modal-backdrop#party-invite-modal {
+  align-items: center;
+  padding: 16px;
+}
+
+.party-invite-card {
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.party-invite-card .pwa-modal-header {
+  margin-bottom: 0;
+}
+
+.party-invite-sub {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.party-qr {
+  align-self: center;
+  width: 200px;
+  height: 200px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.party-qr svg {
+  width: 100%;
+  height: 100%;
+}
+
+.party-qr-loading {
+  color: #555;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.party-invite-code-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.party-invite-code {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  letter-spacing: 0.25em;
+  color: var(--text-primary);
+}
+
+.party-invite-link {
+  display: flex;
+  gap: 8px;
+}
+
+.party-invite-link input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 767px) {
+  .party-room-bar {
+    align-items: stretch;
+  }
+
+  .party-room-actions {
+    width: 100%;
+  }
+
+  .party-room-actions .party-avatars {
+    flex: 1;
+  }
+
+  .party-control-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .party-remote-btns {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .party-remote-btns .remote-btn {
+    padding: 8px 4px;
+    text-align: center;
+  }
+
+  .party-react-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1.2rem;
+  }
+
+  .party-reaction-bar {
+    justify-content: flex-start;
+  }
+
+  .party-sidebar {
+    height: 380px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .party-sidebar {
+    height: auto;
+    max-height: calc(100vh - 220px);
+    min-height: 460px;
+  }
+}

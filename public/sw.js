@@ -3,13 +3,17 @@
 // - Same-origin requests are network-first (you always get the latest build when online)
 //   with the cache as the offline fallback.
 // - Third-party requests (VidSpark embeds, poster images) are left to the browser.
-const CACHE_NAME = 'sparkflix-v5';
+const CACHE_NAME = 'sparkflix-v8';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
   '/ux.css',
+  '/party.css',
   '/app.js',
+  '/party-client.js',
+  '/personal.js',
+  '/welcome.js',
   '/manifest.json',
   '/icons/icon.svg',
   '/icons/icon-192.png',
@@ -38,6 +42,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/live/')) return;
+  // Watch Party uses a never-ending event stream: never intercept or cache it
+  if (url.pathname.startsWith('/api/party/')) return;
+  if (request.headers.get('accept') === 'text/event-stream') return;
 
   event.respondWith(
     fetch(request)
