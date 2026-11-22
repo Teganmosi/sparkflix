@@ -3,17 +3,19 @@
 // - Same-origin requests are network-first (you always get the latest build when online)
 //   with the cache as the offline fallback.
 // - Third-party requests (VidSpark embeds, poster images) are left to the browser.
-const CACHE_NAME = 'sparkflix-v8';
+const CACHE_NAME = 'sparkflix-v9';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
   '/ux.css',
   '/party.css',
+  '/football.css',
   '/app.js',
   '/party-client.js',
   '/personal.js',
   '/welcome.js',
+  '/football-client.js',
   '/manifest.json',
   '/icons/icon.svg',
   '/icons/icon-192.png',

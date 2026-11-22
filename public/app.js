@@ -1807,6 +1807,7 @@ function switchView(viewName, options = {}) {
     loadDiscoverGrid();
   } else if (viewName === 'live') {
     renderLiveHubLists();
+    if (typeof Football !== 'undefined') Football.onEnterLive();
     // Wait for the health-checked channel list before autoplaying anything
     Promise.resolve(state.live.ready ? null : loadLiveChannels()).then(() => {
       if (state.currentView !== 'live') return;

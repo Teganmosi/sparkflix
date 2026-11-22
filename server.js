@@ -6,6 +6,7 @@ const path = require('path');
 const { URL } = require('url');
 const { handlePartyRequest } = require('./party');
 const liveHealth = require('./health');
+const { handleFootballRequest } = require('./football');
 
 const PORT = process.env.PORT || 3000;
 
@@ -434,6 +435,11 @@ const server = http.createServer(async (req, res) => {
 
   // 0b. Watch Party rooms (Server-Sent Events): /api/party/:code[/events|/send]
   if (pathname.startsWith('/api/party/') && handlePartyRequest(req, res, pathname, parsedUrl.searchParams)) {
+    return;
+  }
+
+  // 0b2. Football: live scores + official highlights
+  if (pathname.startsWith('/api/football/') && handleFootballRequest(req, res, pathname, parsedUrl.searchParams)) {
     return;
   }
 

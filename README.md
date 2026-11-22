@@ -51,6 +51,22 @@ The server **health-checks every channel every 5 minutes** (`health.js`): HLS st
 the player waits for the checked list before autoplaying, and if a stream drops mid-watch an
 **offline panel** offers "Try another channel" instead of a black screen.
 
+### 4. Football: live scores + official highlights
+On the Live TV page (`football.js` server, `public/football-client.js` client):
+- **Live scores** for the Premier League, LaLiga, Champions League, Serie A, Bundesliga, Ligue 1 and
+  Europa League, with Yesterday / Today / Tomorrow tabs, league filters, club crests, kickoff times in
+  the viewer's own time zone, and a pulsing **LIVE 67'** badge. Scores refresh every 30 s while a match is
+  live, but only while the page is open and the tab is visible. Data: ESPN's public scoreboard feed
+  (no API key), cached on the server (25 s while live, 5 min otherwise).
+- **Official match highlights** from league and rights-holder YouTube channels (LALIGA, Serie A,
+  TNT Sports, CBS Sports Golazo, ESPN FC), read from their public RSS feeds. The server keeps only
+  real highlight videos (no Shorts or live streams) that the owners allow to be embedded.
+- **Finished matches link to their highlights:** when an official video exists for a result, its score
+  card gets a **▶ Highlights** button.
+- **Region-aware player:** highlights use the YouTube IFrame Player API. If a video is blocked in the
+  viewer's country, SparkFlix shows "This video can't play here" with **Play another highlight**, and
+  hides that video for this viewer from then on.
+
 ---
 
 ## Features
@@ -126,6 +142,8 @@ falls back to calling the VidSpark API directly.
 | `server.js` | Static file server, API proxies, response cache, `/healthz` |
 | `party.js` | Watch Party rooms over Server-Sent Events |
 | `health.js` | Live channel health checks |
+| `football.js` | Live scores + official highlights API (cached) |
+| `public/football-client.js`, `football.css` | Scores panel, highlights row, highlight player |
 | `public/index.html` | Page structure for all views and overlays |
 | `public/app.js` | State, data fetching, rendering, player, profiles, Live TV |
 | `public/party-client.js` | Watch Party client: rooms, sync, chat, reactions, invites/QR |

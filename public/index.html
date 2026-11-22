@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/ux.css" />
   <link rel="stylesheet" href="/party.css" />
+  <link rel="stylesheet" href="/football.css" />
 </head>
 <body data-view="home">
   <!-- Ambient dynamic background glow -->
@@ -654,9 +655,41 @@
           </aside>
         </div>
 
+        <!-- ==================== FOOTBALL: live scores + official highlights (football-client.js) ==================== -->
+        <section class="football-section" id="football-section" aria-labelledby="football-title">
+          <div class="football-head">
+            <div>
+              <h2 class="football-title" id="football-title">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7l4.5 3.3-1.7 5.2H9.2L7.5 10.3z"/><path d="M12 2v5M21.5 9.5l-5 .8M18 20l-3.2-4.5M6 20l3.2-4.5M2.5 9.5l5 .8"/></svg>
+                Football
+              </h2>
+              <p class="rail-reason">Live scores from Europe's top leagues and official match highlights.</p>
+            </div>
+          </div>
+
+          <div class="scores-card">
+            <div class="scores-toolbar">
+              <div class="discover-tabs scores-days" id="scores-days" role="tablist" aria-label="Match day"></div>
+              <div class="scores-leagues" id="scores-leagues" aria-label="Filter by league"></div>
+            </div>
+            <div class="scores-list" id="scores-list" aria-live="polite"></div>
+            <p class="scores-updated" id="scores-updated"></p>
+          </div>
+
+          <div class="highlights-block">
+            <div class="rail-header">
+              <div>
+                <h3 class="rail-title">Match highlights</h3>
+                <p class="rail-reason">From official league and broadcaster channels</p>
+              </div>
+            </div>
+            <div class="rail-scroller highlights-scroller" id="scroller-highlights"></div>
+          </div>
+        </section>
+
         <!-- Full Channel Cards Grid below stage -->
         <div class="live-grid-section">
-          <h2 class="rail-title" style="margin-bottom: 14px;">All Live Broadcasts &amp; Match Feeds</h2>
+          <h2 class="rail-title" style="margin-bottom: 14px;">All channels</h2>
           <div class="live-cards-grid" id="live-cards-grid"></div>
         </div>
       </div>
@@ -932,6 +965,35 @@
     </div>
   </div>
 
+  <!-- ==================== HIGHLIGHT PLAYER ==================== -->
+  <div class="pwa-modal-backdrop highlight-backdrop" id="highlight-modal" hidden role="dialog" aria-modal="true" aria-labelledby="highlight-title">
+    <div class="highlight-card">
+      <div class="highlight-top">
+        <div class="highlight-meta">
+          <span class="highlight-league" id="highlight-league"></span>
+          <h3 id="highlight-title"></h3>
+        </div>
+        <button class="modal-close-x" id="highlight-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="highlight-frame">
+        <!-- Replaced by the YouTube IFrame Player (football-client.js), which reports region blocks -->
+        <div id="highlight-player"></div>
+        <div class="highlight-error" id="highlight-error" hidden>
+          <strong>This video can’t play here</strong>
+          <span>The league has limited it to some countries, or it was removed.</span>
+          <div class="highlight-error-actions">
+            <button class="btn-hero-play" id="highlight-next">Play another highlight</button>
+            <a class="btn-secondary-sm" id="highlight-error-yt" href="#" target="_blank" rel="noopener">Watch on YouTube</a>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-foot">
+        <span id="highlight-channel"></span>
+        <a id="highlight-youtube" href="#" target="_blank" rel="noopener">Watch on YouTube</a>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== FIRST-VISIT WELCOME ==================== -->
   <div class="pwa-modal-backdrop welcome-backdrop" id="welcome-modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcome-title">
     <div class="pwa-modal-card welcome-card">
@@ -989,6 +1051,7 @@
   <script src="/party-client.js"></script>
   <script src="/personal.js"></script>
   <script src="/welcome.js"></script>
+  <script src="/football-client.js"></script>
 </body>
 </html>
 
