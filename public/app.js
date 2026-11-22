@@ -113,29 +113,34 @@ const FALLBACK_LIVE_CHANNELS = [
   {
     id: 'yooyo-test-1',
     albaId: 'test-1',
-    title: 'YooyoTV Main Match Feed (RRTY HD)',
+    title: 'YooyoTV Main Match Feed (Server 1 HD)',
     category: 'sports',
-    competition: 'Live Football · RenRen TiYu',
+    competition: 'Live Football · YooyoTV Primary Arena',
     badge: 'LIVE MATCH',
     quality: 'HD 1080p',
-    language: 'Live Stadium / ZH',
-    m3u8Url:
+    language: 'Live Stadium',
+    m3u8Url: '',
+    fallbackM3u8Url:
       'https://play.aarray.cn/rrty/hd-zh-1-4518097_gqzm.m3u8?auth_key=1794695523-0-0-afae1a8fa2307546474308566c247e1c&token=b31b516187a32f20&device=4&platform=rrty',
     embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=test-1',
+    proxyEmbedUrl: '/api/live/embed?id=test-1',
+    pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
     poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
   },
   {
     id: 'yooyo-test-2',
     albaId: 'test-2',
-    title: 'YooyoTV Match Arena 2',
+    title: 'YooyoTV Match Arena 2 (Server 2 HD)',
     category: 'sports',
     competition: 'Premier League & European Football',
-    badge: 'LIVE SPORTS',
-    quality: 'HD',
+    badge: 'LIVE MATCH',
+    quality: 'HD 1080p',
     language: 'Multi',
     m3u8Url: '',
     embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=test-2',
+    proxyEmbedUrl: '/api/live/embed?id=test-2',
+    pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
     poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
   },
@@ -150,8 +155,42 @@ const FALLBACK_LIVE_CHANNELS = [
     language: 'EN / AR',
     m3u8Url: '',
     embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=bein-1',
+    proxyEmbedUrl: '/api/live/embed?id=bein-1',
+    pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
     poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'yooyo-bein-2',
+    albaId: 'bein-2',
+    title: 'YooyoTV Sports Channel 4 (beIN Premium 2)',
+    category: 'sports',
+    competition: 'European Leagues & Cup Football',
+    badge: 'LIVE SPORTS',
+    quality: 'HD',
+    language: 'EN / AR',
+    m3u8Url: '',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=bein-2',
+    proxyEmbedUrl: '/api/live/embed?id=bein-2',
+    pageUrl: 'https://yooyotvlive.com.ng/',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'yooyo-ssc-1',
+    albaId: 'ssc-1',
+    title: 'YooyoTV Sports Channel 5 (SSC / Spotv)',
+    category: 'sports',
+    competition: 'Pro League & International Football',
+    badge: 'LIVE SPORTS',
+    quality: 'HD',
+    language: 'Multi',
+    m3u8Url: '',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=ssc-1',
+    proxyEmbedUrl: '/api/live/embed?id=ssc-1',
+    pageUrl: 'https://yooyotvlive.com.ng/',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=900&q=80'
   },
   {
     id: 'redbull-tv',
@@ -1570,23 +1609,33 @@ function syncLiveEngineButtons() {
   });
 }
 
-async function playLiveChannel(channel, { engineOverride = null, autoplay = true } = {}) {
+async function playLiveChannel(channel, { engineOverride = null, autoplay = true, forceResolve = false } = {}) {
   if (!channel) return;
+  const isNewChannel = state.live.activeChannel !== channel;
+  if (isNewChannel) {
+    channel._retriedFreshToken = false;
+  }
   state.live.activeChannel = channel;
   state.live.loaded = true;
 
-  if (engineOverride) {
-    state.live.engine = engineOverride;
-  } else if (!channel.m3u8Url && channel.embedUrl && !channel.albaId) {
-    state.live.engine = 'embed';
-  } else if (state.live.engine === 'embed' && !channel.embedUrl && channel.m3u8Url) {
-    state.live.engine = 'hls';
+  const isYooyo = Boolean(
+    channel.albaId || channel.sourceSite === 'yooyotvlive.com.ng' || String(channel.id || '').startsWith('yooyo-')
+  );
+
+  // Update the "YooyoTV page ↗" and "Refresh token" buttons in the control strip
+  const yooyoBtn = $('live-open-yooyo-btn');
+  if (yooyoBtn) {
+    yooyoBtn.hidden = !isYooyo;
+    yooyoBtn.href = channel.embedUrl || channel.pageUrl || 'https://yooyotvlive.com.ng/';
+  }
+  const reResolveBtn = $('live-re-resolve-btn');
+  if (reResolveBtn) {
+    reResolveBtn.hidden = !channel.albaId;
   }
 
   hideLiveOffline();
   $('live-playing-title').textContent = channel.title;
   $('live-playing-badge').textContent = channel.badge || 'LIVE';
-  syncLiveEngineButtons();
   renderLiveHomeRail();
   renderLiveHubLists();
 
@@ -1597,15 +1646,24 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
   const qualityWrap = $('live-quality-wrap');
   const qualitySelect = $('live-quality-select');
 
-  // If this is a YooyoTV AlbaPlayer channel without a resolved m3u8Url yet, ask /api/live/resolve
-  if (channel.albaId && !channel.m3u8Url && state.live.engine !== 'embed') {
-    $('live-active-source-display').textContent = `/api/live/resolve?id=${channel.albaId}`;
+  // Always resolve a fresh token for YooyoTV AlbaPlayer channels when needed (tokens expire quickly)
+  const tokenStale = !channel._resolvedAt || Date.now() - channel._resolvedAt > 45000;
+  if (channel.albaId && engineOverride !== 'embed' && (forceResolve || !channel.m3u8Url || tokenStale)) {
+    $('live-active-source-display').textContent = `/api/live/resolve?id=${channel.albaId}${forceResolve ? '&refresh=1' : ''}`;
     try {
-      const res = await fetch(`/api/live/resolve?id=${encodeURIComponent(channel.albaId)}`);
+      const qs = new URLSearchParams({ id: channel.albaId });
+      if (forceResolve) qs.set('refresh', '1');
+      if (channel.pageUrl) qs.set('matchUrl', channel.pageUrl);
+      const res = await fetch(`/api/live/resolve?${qs}`);
       if (res.ok) {
         const resolved = await res.json();
         if (resolved && resolved.m3u8Url) {
           channel.m3u8Url = resolved.m3u8Url;
+          channel.proxyM3u8Url = resolved.proxyM3u8Url;
+          channel._resolvedAt = Date.now();
+        }
+        if (resolved && resolved.proxyEmbedUrl) {
+          channel.proxyEmbedUrl = resolved.proxyEmbedUrl;
         }
       }
     } catch (_) {
@@ -1613,31 +1671,49 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
     }
   }
 
-  // Decide final playback mode
-  let mode = state.live.engine;
-  if ((mode === 'hls' || mode === 'proxy') && !channel.m3u8Url && channel.embedUrl) {
-    mode = 'embed';
-    state.live.engine = 'embed';
-    syncLiveEngineButtons();
+  // Decide final playback mode:
+  // - YooyoTV .m3u8 streams default to 'proxy' (Server Proxy) because upstream CDNs block browser CORS
+  // - YooyoTV channels without a raw .m3u8 automatically open the YooyoTV AlbaPlayer 'embed'
+  // - Standard 24/7 broadcasters default to direct 'hls'
+  let mode = engineOverride || state.live.engine;
+  if (!engineOverride) {
+    if (isYooyo) {
+      mode = channel.m3u8Url ? 'proxy' : 'embed';
+    } else {
+      mode = channel.m3u8Url ? 'hls' : 'embed';
+    }
+  } else if ((mode === 'hls' || mode === 'proxy') && !channel.m3u8Url) {
+    if (channel.fallbackM3u8Url) {
+      channel.m3u8Url = channel.fallbackM3u8Url;
+    } else if (channel.embedUrl || channel.albaId) {
+      mode = 'embed';
+    }
   }
 
+  state.live.engine = mode;
+  syncLiveEngineButtons();
+
   if (mode === 'embed') {
-    const targetEmbed =
-      channel.embedUrl ||
-      (channel.albaId
-        ? `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(channel.albaId)}`
-        : channel.m3u8Url);
+    // Use our same-origin /api/live/embed proxy for YooyoTV channels so 3rd-party PHPSESSID cookies aren't blocked
+    const targetEmbed = channel.albaId
+      ? channel.proxyEmbedUrl || `/api/live/embed?id=${encodeURIComponent(channel.albaId)}`
+      : channel.embedUrl || channel.m3u8Url;
     video.hidden = true;
     iframe.hidden = false;
     qualityWrap.hidden = true;
     iframe.src = targetEmbed;
-    $('live-active-source-display').textContent = targetEmbed;
+    $('live-active-source-display').textContent = channel.embedUrl || targetEmbed;
     return;
   }
 
-  // HLS (.m3u8) playback (Direct or via Server Proxy)
-  const rawM3u8 = channel.m3u8Url;
-  const playUrl = mode === 'proxy' ? `/api/live/proxy?url=${encodeURIComponent(rawM3u8)}` : rawM3u8;
+  // HLS (.m3u8) playback (Direct or via Server Proxy with session cookies & Referer)
+  const rawM3u8 = channel.m3u8Url || channel.fallbackM3u8Url;
+  const playUrl =
+    mode === 'proxy'
+      ? `/api/live/proxy?url=${encodeURIComponent(rawM3u8)}${
+          channel.albaId ? `&albaId=${encodeURIComponent(channel.albaId)}` : ''
+        }`
+      : rawM3u8;
   $('live-active-source-display').textContent = playUrl;
 
   iframe.hidden = true;
@@ -1672,12 +1748,19 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
 
     hls.on(window.Hls.Events.ERROR, (_, data) => {
       if (!data.fatal) return;
-      // Automatic fallback cascade: Direct HLS -> Server Proxy HLS -> YooyoTV AlbaPlayer Embed
+      // Automatic fallback cascade:
+      // 1) Direct HLS -> Server Proxy HLS
+      // 2) Server Proxy HLS (YooyoTV) -> Refresh fresh auth_key token via /api/live/resolve?refresh=1
+      // 3) Server Proxy HLS -> YooyoTV AlbaPlayer Embed (/api/live/embed)
       if (mode === 'hls') {
-        showToast('Reconnecting through the SparkFlix server…');
+        showToast('Reconnecting through the SparkFlix server proxy…');
         playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
+      } else if (channel.albaId && !channel._retriedFreshToken) {
+        channel._retriedFreshToken = true;
+        showToast('Refreshing live stream token from YooyoTV…');
+        playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true, forceResolve: true });
       } else if (channel.embedUrl || channel.albaId) {
-        showToast('Trying this channel’s backup player…');
+        showToast('Switching to YooyoTV AlbaPlayer web player…');
         playLiveChannel(channel, { engineOverride: 'embed', autoplay: true });
       } else {
         showLiveOffline(`${channel.title} is offline right now.`);
@@ -1687,12 +1770,20 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
     // Native HLS on iOS / macOS Safari
     video.onerror = () => {
       if (state.live.activeChannel !== channel) return;
-      if (mode === 'hls') playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
-      else showLiveOffline(`${channel.title} is offline right now.`);
+      if (mode === 'hls') {
+        playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
+      } else if (channel.albaId && !channel._retriedFreshToken) {
+        channel._retriedFreshToken = true;
+        playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true, forceResolve: true });
+      } else if (channel.embedUrl || channel.albaId) {
+        playLiveChannel(channel, { engineOverride: 'embed', autoplay: true });
+      } else {
+        showLiveOffline(`${channel.title} is offline right now.`);
+      }
     };
     video.src = playUrl;
     if (autoplay) video.play().catch(() => {});
-  } else if (channel.embedUrl) {
+  } else if (channel.embedUrl || channel.albaId) {
     playLiveChannel(channel, { engineOverride: 'embed', autoplay: true });
   }
 }
@@ -1919,6 +2010,15 @@ document.addEventListener('DOMContentLoaded', () => {
         state.live.hlsInstance.currentLevel = Number(e.target.value);
         showToast(e.target.value === '-1' ? 'Quality: Auto (Adaptive)' : `Quality locked to ${e.target.selectedOptions[0].textContent}`);
       }
+    });
+  }
+  if ($('live-re-resolve-btn')) {
+    $('live-re-resolve-btn').addEventListener('click', () => {
+      const ch = state.live.activeChannel;
+      if (!ch) return;
+      ch._retriedFreshToken = false;
+      showToast(`Refreshing stream token for ${ch.title}…`);
+      playLiveChannel(ch, { autoplay: true, forceResolve: true });
     });
   }
   if ($('live-copy-stream-btn')) {

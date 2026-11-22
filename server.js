@@ -44,29 +44,34 @@ const DEFAULT_LIVE_CHANNELS = [
   {
     id: 'yooyo-test-1',
     albaId: 'test-1',
-    title: 'YooyoTV Main Match Feed (RRTY HD)',
+    title: 'YooyoTV Main Match Feed (Server 1 HD)',
     category: 'sports',
-    competition: 'Live Football · RenRen TiYu',
+    competition: 'Live Football · YooyoTV Primary Arena',
     badge: 'LIVE MATCH',
     quality: 'HD 1080p',
-    language: 'Live Stadium / ZH',
-    m3u8Url:
+    language: 'Live Stadium',
+    m3u8Url: '',
+    fallbackM3u8Url:
       'https://play.aarray.cn/rrty/hd-zh-1-4518097_gqzm.m3u8?auth_key=1794695523-0-0-afae1a8fa2307546474308566c247e1c&token=b31b516187a32f20&device=4&platform=rrty',
     embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=test-1',
+    proxyEmbedUrl: '/api/live/embed?id=test-1',
+    pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
     poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
   },
   {
     id: 'yooyo-test-2',
     albaId: 'test-2',
-    title: 'YooyoTV Match Arena 2',
+    title: 'YooyoTV Match Arena 2 (Server 2 HD)',
     category: 'sports',
     competition: 'Premier League & European Football',
-    badge: 'LIVE SPORTS',
-    quality: 'HD',
+    badge: 'LIVE MATCH',
+    quality: 'HD 1080p',
     language: 'Multi',
     m3u8Url: '',
     embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=test-2',
+    proxyEmbedUrl: '/api/live/embed?id=test-2',
+    pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
     poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
   },
@@ -81,8 +86,42 @@ const DEFAULT_LIVE_CHANNELS = [
     language: 'EN / AR',
     m3u8Url: '',
     embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=bein-1',
+    proxyEmbedUrl: '/api/live/embed?id=bein-1',
+    pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
     poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'yooyo-bein-2',
+    albaId: 'bein-2',
+    title: 'YooyoTV Sports Channel 4 (beIN Premium 2)',
+    category: 'sports',
+    competition: 'European Leagues & Cup Football',
+    badge: 'LIVE SPORTS',
+    quality: 'HD',
+    language: 'EN / AR',
+    m3u8Url: '',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=bein-2',
+    proxyEmbedUrl: '/api/live/embed?id=bein-2',
+    pageUrl: 'https://yooyotvlive.com.ng/',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'yooyo-ssc-1',
+    albaId: 'ssc-1',
+    title: 'YooyoTV Sports Channel 5 (SSC / Spotv)',
+    category: 'sports',
+    competition: 'Pro League & International Football',
+    badge: 'LIVE SPORTS',
+    quality: 'HD',
+    language: 'Multi',
+    m3u8Url: '',
+    embedUrl: 'https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=ssc-1',
+    proxyEmbedUrl: '/api/live/embed?id=ssc-1',
+    pageUrl: 'https://yooyotvlive.com.ng/',
+    sourceSite: 'yooyotvlive.com.ng',
+    poster: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=900&q=80'
   },
   {
     id: 'redbull-tv',
@@ -233,29 +272,177 @@ function fetchRemoteJson(targetUrl, timeoutMs = 8000) {
   });
 }
 
+// Per-channel session state for YooyoTV AlbaPlayer (stores PHPSESSID cookies & referers across resolve + proxy)
+const yooyoSessions = new Map();
+const yooyoCookieJar = new Map();
+
+function storeSetCookies(setCookieHeader, albaId = '') {
+  const list = Array.isArray(setCookieHeader) ? setCookieHeader : setCookieHeader ? [setCookieHeader] : [];
+  const pairs = [];
+  for (const raw of list) {
+    const firstPart = String(raw || '').split(';')[0].trim();
+    const eqIdx = firstPart.indexOf('=');
+    if (eqIdx > 0) {
+      const k = firstPart.slice(0, eqIdx).trim();
+      const v = firstPart.slice(eqIdx + 1).trim();
+      yooyoCookieJar.set(k, v);
+      pairs.push(`${k}=${v}`);
+    }
+  }
+  if (albaId && pairs.length) {
+    const prev = yooyoSessions.get(albaId) || {};
+    const mergedMap = new Map();
+    if (prev.cookieHeader) {
+      prev.cookieHeader.split(';').forEach((p) => {
+        const [k, ...rest] = p.trim().split('=');
+        if (k) mergedMap.set(k, rest.join('='));
+      });
+    }
+    pairs.forEach((p) => {
+      const [k, ...rest] = p.split('=');
+      if (k) mergedMap.set(k, rest.join('='));
+    });
+    const cookieHeader = [...mergedMap.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+    yooyoSessions.set(albaId, { ...prev, cookieHeader, updatedAt: Date.now() });
+    return cookieHeader;
+  }
+  return [...yooyoCookieJar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
+function getYooyoCookieHeader(albaId = '') {
+  if (albaId && yooyoSessions.has(albaId)) {
+    const s = yooyoSessions.get(albaId);
+    if (s && s.cookieHeader) return s.cookieHeader;
+  }
+  return [...yooyoCookieJar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
 /**
- * Extracts any .m3u8 URL from raw HTML, JS, or JSON responses (including base64 encoded strings in AlbaPlayer).
+ * Unpacks Dean Edwards packed JS blocks: eval(function(p,a,c,k,e,d){...}('payload',radix,count,'sym1|sym2'.split('|')))
  */
-function extractM3u8FromText(text) {
+function unpackDeanEdwards(text) {
+  if (!text || !text.includes('eval(function(p,a,c,k,e,')) return '';
+  const regex =
+    /eval\(function\(p,a,c,k,e,[dr]\)\{[\s\S]*?\}\(\s*'((?:\\'|[^'])*)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'((?:\\'|[^'])*)'\.split\('\|'\)/g;
+  const unpackedChunks = [];
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    let payload = m[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+    const radix = parseInt(m[2], 10) || 36;
+    let count = parseInt(m[3], 10) || 0;
+    const symtab = m[4].split('|');
+    const encodeBase = (num) => {
+      const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (num < radix) {
+        return num < 36 ? num.toString(36) : chars[num] || String(num);
+      }
+      return encodeBase(Math.floor(num / radix)) + encodeBase(num % radix);
+    };
+    while (count--) {
+      if (symtab[count]) {
+        const token = encodeBase(count);
+        payload = payload.replace(new RegExp(`\\b${token}\\b`, 'g'), symtab[count]);
+      }
+    }
+    unpackedChunks.push(payload);
+  }
+  return unpackedChunks.join('\n');
+}
+
+/**
+ * Extracts any .m3u8 URL from raw HTML, JS, or JSON responses (including base64, hex, JSON fields, and packed scripts).
+ */
+function extractM3u8FromText(text, baseUrl = 'https://yooyotvlive.com.ng/') {
   if (!text) return '';
 
-  // 1. Direct https://...m3u8 URL (unescaped or JSON-escaped)
-  const unescaped = text.replace(/\\\//g, '/');
-  const directMatch = unescaped.match(/https?:\/\/[^\s"'<>\\]+\.m3u8(?:\?[^\s"'<>\\]*)?/i);
+  const unpacked = unpackDeanEdwards(text);
+  const combined = unpacked ? `${text}\n${unpacked}` : text;
+
+  // Normalize escaped slashes, hex escapes (\x2f), unicode escapes (\u002f), and HTML entities (&amp;)
+  const unescaped = combined
+    .replace(/\\\//g, '/')
+    .replace(/\\x([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/\\u([0-9A-Fa-f]{4})/g, (_, u) => String.fromCharCode(parseInt(u, 16)))
+    .replace(/&amp;/gi, '&');
+
+  // 1. Direct https://...m3u8 URL
+  const directMatch = unescaped.match(/https?:\/\/[^\s"'<>\\`]+\.m3u8(?:\?[^\s"'<>\\`]*)?/i);
   if (directMatch) {
     return directMatch[0];
   }
 
-  // 2. Check base64 strings (AlbaPlayer frequently encodes links with base64 / atob)
-  const b64Matches = unescaped.match(/(?:atob\s*\(\s*["']|["'])(aHR0c[A-Za-z0-9+/=]{16,})["']/g) || [];
+  // 2. Protocol-relative //...m3u8 URL
+  const protoRelMatch = unescaped.match(/\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\/[^\s"'<>\\`]+\.m3u8(?:\?[^\s"'<>\\`]*)?/i);
+  if (protoRelMatch) {
+    return `https:${protoRelMatch[0]}`;
+  }
+
+  // 3. JSON object fields (streamUrl, stream_url, m3u8, url, file, source, src, hls)
+  try {
+    const parsedJson = JSON.parse(combined);
+    const candidateKeys = ['m3u8Url', 'm3u8', 'streamUrl', 'stream_url', 'stream', 'file', 'source', 'url', 'src', 'hls'];
+    const inspectObj = (obj) => {
+      if (!obj || typeof obj !== 'object') return '';
+      for (const k of candidateKeys) {
+        const val = obj[k];
+        if (typeof val === 'string' && val.trim()) {
+          const v = val.trim().replace(/\\\//g, '/');
+          if (/\.m3u8(\?|$)/i.test(v)) {
+            try {
+              return new URL(v, baseUrl).toString();
+            } catch (_) {
+              return v;
+            }
+          }
+          // Might be base64 inside JSON field
+          if (/^[A-Za-z0-9+/=]{20,}$/.test(v)) {
+            try {
+              const dec = Buffer.from(v, 'base64').toString('utf-8');
+              const nested = extractM3u8FromText(dec, baseUrl);
+              if (nested) return nested;
+            } catch (_) {}
+          }
+        }
+      }
+      for (const val of Object.values(obj)) {
+        if (val && typeof val === 'object') {
+          const found = inspectObj(val);
+          if (found) return found;
+        }
+      }
+      return '';
+    };
+    const fromJson = inspectObj(parsedJson);
+    if (fromJson) return fromJson;
+  } catch (_) {
+    /* not pure JSON */
+  }
+
+  // 4. Check base64 strings (atob("...") or quoted base64 strings)
+  const b64Matches =
+    unescaped.match(/(?:atob\s*\(\s*["']|["'])([A-Za-z0-9+/=_-]{24,})["']/g) || [];
   for (const raw of b64Matches) {
     const token = raw.replace(/^(?:atob\s*\(\s*)?["']|["']$/g, '');
     try {
       const decoded = Buffer.from(token, 'base64').toString('utf-8');
-      const m = decoded.match(/https?:\/\/[^\s"'<>\\]+\.m3u8(?:\?[^\s"'<>\\]*)?/i);
-      if (m) return m[0];
+      if (decoded.includes('.m3u8') || decoded.includes('http')) {
+        const m = decoded.match(/https?:\/\/[^\s"'<>\\`]+\.m3u8(?:\?[^\s"'<>\\`]*)?/i);
+        if (m) return m[0];
+      }
     } catch (_) {
       /* ignore invalid base64 */
+    }
+  }
+
+  // 5. Relative .m3u8 path inside player attributes (file: "...", src: "...", source: "...")
+  const relMatch = unescaped.match(
+    /(?:file|source|src|stream|url|hls)\s*[:=]\s*["']([^"']+\.m3u8(?:\?[^"']*)?)["']/i
+  );
+  if (relMatch && relMatch[1]) {
+    try {
+      return new URL(relMatch[1], baseUrl).toString();
+    } catch (_) {
+      return relMatch[1];
     }
   }
 
@@ -265,69 +452,102 @@ function extractM3u8FromText(text) {
 /**
  * Resolves a fresh .m3u8 URL from yooyotvlive.com.ng's AlbaPlayer endpoint:
  * 1) Fetches /albaplayer-package/m3u8-player.php?id=<albaId> and captures PHPSESSID cookie
- * 2) Checks HTML for embedded .m3u8
- * 3) Polls /albaplayer-package/m3u8-player.php?status=1&_=<ts> with that session cookie
+ * 2) Checks HTML (including packed JS / base64 / JSON) for embedded .m3u8
+ * 3) Polls /albaplayer-package/m3u8-player.php?status=1&_=<ts> (and ?id=<albaId>&status=1) with that session cookie
+ * 4) Follows nested iframe player URLs if present
  */
-async function resolveAlbaPlayerChannel(albaId = 'test-1') {
+async function resolveAlbaPlayerChannel(albaId = 'test-1', { forceRefresh = false, matchUrl = '' } = {}) {
   const cleanId = String(albaId || 'test-1').replace(/[^a-zA-Z0-9_-]/g, '');
   const cacheKey = `alba:${cleanId}`;
   const cached = apiCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < LIVE_CACHE_TTL_MS) {
+  if (!forceRefresh && cached && Date.now() - cached.timestamp < 1000 * 45) {
     return cached.data;
   }
 
   const embedUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(cleanId)}`;
+  const refererPage = matchUrl || 'https://yooyotvlive.com.ng/';
   let m3u8Url = '';
   let statusPayload = null;
+  let cookieHeader = getYooyoCookieHeader(cleanId);
 
   try {
     const pageRes = await fetchRemoteBuffer(embedUrl, {
       timeoutMs: 6500,
       headers: {
-        Referer: 'https://yooyotvlive.com.ng/',
-        Origin: 'https://yooyotvlive.com.ng'
+        Referer: refererPage,
+        Origin: 'https://yooyotvlive.com.ng',
+        ...(cookieHeader ? { Cookie: cookieHeader } : {})
       }
     });
 
-    m3u8Url = extractM3u8FromText(pageRes.body);
+    cookieHeader = storeSetCookies(pageRes.headers['set-cookie'], cleanId) || cookieHeader;
+    m3u8Url = extractM3u8FromText(pageRes.body, embedUrl);
 
-    const setCookies = pageRes.headers['set-cookie'] || [];
-    const cookieHeader = (Array.isArray(setCookies) ? setCookies : [setCookies])
-      .map((c) => String(c).split(';')[0])
-      .filter(Boolean)
-      .join('; ');
-
+    // Try status=1 polling endpoints with the captured PHPSESSID session cookie
     if (!m3u8Url) {
-      const statusUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?status=1&_=${Date.now()}`;
-      const statusRes = await fetchRemoteBuffer(statusUrl, {
-        timeoutMs: 5500,
-        headers: {
-          Referer: embedUrl,
-          Origin: 'https://yooyotvlive.com.ng',
-          ...(cookieHeader ? { Cookie: cookieHeader } : {})
-        }
-      });
+      const statusEndpoints = [
+        `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?status=1&_=${Date.now()}`,
+        `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(cleanId)}&status=1&_=${Date.now()}`
+      ];
 
-      m3u8Url = extractM3u8FromText(statusRes.body);
-      try {
-        statusPayload = JSON.parse(statusRes.body);
-      } catch (_) {
-        statusPayload = null;
+      for (const statusUrl of statusEndpoints) {
+        if (m3u8Url) break;
+        try {
+          const statusRes = await fetchRemoteBuffer(statusUrl, {
+            timeoutMs: 5000,
+            headers: {
+              Referer: embedUrl,
+              Origin: 'https://yooyotvlive.com.ng',
+              'X-Requested-With': 'XMLHttpRequest',
+              Accept: 'application/json, text/javascript, */*; q=0.01',
+              ...(cookieHeader ? { Cookie: cookieHeader } : {})
+            }
+          });
+          cookieHeader = storeSetCookies(statusRes.headers['set-cookie'], cleanId) || cookieHeader;
+          m3u8Url = extractM3u8FromText(statusRes.body, embedUrl);
+          try {
+            statusPayload = JSON.parse(statusRes.body);
+          } catch (_) {}
+        } catch (_) {}
+      }
+    }
+
+    // Check if the player page embeds a secondary iframe player
+    if (!m3u8Url && pageRes.body) {
+      const iframeMatch = pageRes.body.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+      if (iframeMatch && iframeMatch[1] && !iframeMatch[1].includes('about:blank')) {
+        try {
+          const nestedUrl = new URL(iframeMatch[1].replace(/&amp;/g, '&'), embedUrl).toString();
+          const nestedRes = await fetchRemoteBuffer(nestedUrl, {
+            timeoutMs: 5000,
+            headers: {
+              Referer: embedUrl,
+              Origin: 'https://yooyotvlive.com.ng',
+              ...(cookieHeader ? { Cookie: cookieHeader } : {})
+            }
+          });
+          m3u8Url = extractM3u8FromText(nestedRes.body, nestedUrl);
+        } catch (_) {}
       }
     }
   } catch (_) {
-    /* Upstream unreachable or timed out; fallback used */
+    /* Upstream unreachable or timed out */
   }
 
-  // Fallback for test-1 if upstream didn't expose raw m3u8 in initial scrape
-  if (!m3u8Url && cleanId === 'test-1') {
-    m3u8Url = DEFAULT_LIVE_CHANNELS[0].m3u8Url;
-  }
+  yooyoSessions.set(cleanId, {
+    ...(yooyoSessions.get(cleanId) || {}),
+    cookieHeader,
+    refererUrl: embedUrl,
+    m3u8Url,
+    updatedAt: Date.now()
+  });
 
   const result = {
     albaId: cleanId,
     embedUrl,
+    proxyEmbedUrl: `/api/live/embed?id=${encodeURIComponent(cleanId)}`,
     m3u8Url,
+    proxyM3u8Url: m3u8Url ? `/api/live/proxy?url=${encodeURIComponent(m3u8Url)}&albaId=${encodeURIComponent(cleanId)}` : '',
     statusPayload,
     resolvedAt: new Date().toISOString()
   };
@@ -336,7 +556,22 @@ async function resolveAlbaPlayerChannel(albaId = 'test-1') {
 }
 
 /**
- * Scrapes yooyotvlive.com.ng homepage for any live match cards and AlbaPlayer channel IDs.
+ * Helper to clean HTML tags and entities from scraped match titles.
+ */
+function cleanHtmlText(raw) {
+  return String(raw || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#8211;|&ndash;/gi, '–')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Scrapes yooyotvlive.com.ng homepage AND linked match pages for live match cards, team names, and AlbaPlayer channel IDs.
  */
 async function discoverYooyoLiveChannels(forceRefresh = false) {
   const cacheKey = 'live:channels:list';
@@ -348,57 +583,137 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
   const discovered = [];
   const seenIds = new Set();
 
+  const addDiscoveredChannel = (albaId, meta = {}) => {
+    const cleanId = String(albaId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!cleanId || seenIds.has(cleanId)) return;
+    seenIds.add(cleanId);
+    const embedUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(cleanId)}`;
+    discovered.push({
+      id: `yooyo-${cleanId}`,
+      albaId: cleanId,
+      title: meta.title || `YooyoTV Live Feed (${cleanId.toUpperCase()})`,
+      category: 'sports',
+      competition: meta.competition || 'YooyoTV Live Football',
+      badge: meta.badge || 'LIVE MATCH',
+      quality: 'HD',
+      language: 'Live',
+      m3u8Url: meta.m3u8Url || '',
+      embedUrl,
+      proxyEmbedUrl: `/api/live/embed?id=${encodeURIComponent(cleanId)}`,
+      pageUrl: meta.pageUrl || 'https://yooyotvlive.com.ng/',
+      sourceSite: 'yooyotvlive.com.ng',
+      poster: meta.poster || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
+    });
+  };
+
   try {
     const homeRes = await fetchRemoteBuffer('https://yooyotvlive.com.ng/', {
       timeoutMs: 6500,
       headers: { Referer: 'https://yooyotvlive.com.ng/' }
     });
+    storeSetCookies(homeRes.headers['set-cookie']);
 
     const html = homeRes.body || '';
 
-    // Find any m3u8-player.php?id=XYZ references in the homepage
+    // 1. Find any direct m3u8-player.php?id=XYZ references in the homepage
     const idRegex = /m3u8-player\.php\?id=([a-zA-Z0-9_-]+)/gi;
     let match;
     while ((match = idRegex.exec(html)) !== null) {
-      const albaId = match[1];
-      if (!seenIds.has(albaId)) {
-        seenIds.add(albaId);
-        discovered.push({
-          id: `yooyo-${albaId}`,
-          albaId,
-          title: `YooyoTV Live Feed (${albaId.toUpperCase()})`,
-          category: 'sports',
-          competition: 'YooyoTV Live Football',
-          badge: 'LIVE MATCH',
-          quality: 'HD',
-          language: 'Live',
-          m3u8Url: '',
-          embedUrl: `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(albaId)}`,
-          sourceSite: 'yooyotvlive.com.ng',
-          poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
-        });
+      addDiscoveredChannel(match[1]);
+    }
+
+    // 2. Find match links on yooyotvlive.com.ng (e.g. /matches/..., match cards, or post links)
+    const matchLinks = [];
+    const seenUrls = new Set();
+    const linkRegex = /<a\b[^>]*href=["'](https?:\/\/(?:www\.)?yooyotvlive\.com\.ng\/[^"'#?]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let linkMatch;
+    while ((linkMatch = linkRegex.exec(html)) !== null && matchLinks.length < 6) {
+      const url = linkMatch[1];
+      const inner = linkMatch[2];
+      if (
+        seenUrls.has(url) ||
+        /\/(wp-admin|wp-content|wp-includes|feed|author|tag|category|privacy|contact|about|dmca)\b/i.test(url) ||
+        url.replace(/\/$/, '') === 'https://yooyotvlive.com.ng'
+      ) {
+        continue;
       }
+      seenUrls.add(url);
+      const titleAttr = (linkMatch[0].match(/title=["']([^"']+)["']/i) || [])[1] || '';
+      const textTitle = cleanHtmlText(titleAttr || inner);
+      matchLinks.push({ url, title: textTitle });
+    }
+
+    // 3. Scrape discovered match pages in parallel for their AlbaPlayer IDs or direct .m3u8 streams
+    if (matchLinks.length) {
+      await Promise.allSettled(
+        matchLinks.map(async (item) => {
+          const res = await fetchRemoteBuffer(item.url, {
+            timeoutMs: 4500,
+            headers: {
+              Referer: 'https://yooyotvlive.com.ng/',
+              Cookie: getYooyoCookieHeader()
+            }
+          });
+          const body = res.body || '';
+          const pageTitle =
+            item.title && item.title.length > 4
+              ? item.title
+              : cleanHtmlText(((body.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1]) || '');
+
+          const pageIdRegex = /m3u8-player\.php\?id=([a-zA-Z0-9_-]+)/gi;
+          let m;
+          let idx = 0;
+          while ((m = pageIdRegex.exec(body)) !== null) {
+            idx++;
+            const albaId = m[1];
+            const label = pageTitle
+              ? idx > 1
+                ? `YooyoTV: ${pageTitle} (${albaId.toUpperCase()})`
+                : `YooyoTV: ${pageTitle}`
+              : `YooyoTV Live Feed (${albaId.toUpperCase()})`;
+            addDiscoveredChannel(albaId, {
+              title: label,
+              competition: 'YooyoTV Match Page · Live Football',
+              pageUrl: item.url
+            });
+          }
+        })
+      );
     }
   } catch (_) {
     /* ignore scrape errors and fall back to default channels */
   }
 
-  // Resolve fresh .m3u8 for test-1 in the background or inline
-  const resolvedTest1 = await resolveAlbaPlayerChannel('test-1');
-
-  const channels = DEFAULT_LIVE_CHANNELS.map((ch) => {
-    if (ch.albaId === 'test-1' && resolvedTest1 && resolvedTest1.m3u8Url) {
-      return { ...ch, m3u8Url: resolvedTest1.m3u8Url };
-    }
-    return { ...ch };
-  });
-
-  // Merge any extra AlbaPlayer IDs discovered on yooyotvlive.com.ng
+  // Merge discovered channels with DEFAULT_LIVE_CHANNELS
+  const channels = DEFAULT_LIVE_CHANNELS.map((ch) => ({ ...ch }));
   discovered.forEach((d) => {
-    if (!channels.some((c) => c.albaId === d.albaId)) {
+    const existing = channels.find((c) => c.albaId === d.albaId);
+    if (existing) {
+      if (d.title && d.title.startsWith('YooyoTV:') && !existing.title.startsWith('YooyoTV:')) {
+        existing.title = d.title;
+      }
+      if (d.pageUrl && d.pageUrl !== 'https://yooyotvlive.com.ng/') {
+        existing.pageUrl = d.pageUrl;
+      }
+    } else {
       channels.unshift(d);
     }
   });
+
+  // Resolve fresh .m3u8 URLs in parallel for the top YooyoTV AlbaPlayer channels
+  const yooyoToResolve = channels.filter((c) => c.albaId).slice(0, 6);
+  await Promise.allSettled(
+    yooyoToResolve.map(async (ch) => {
+      const resolved = await resolveAlbaPlayerChannel(ch.albaId, {
+        forceRefresh,
+        matchUrl: ch.pageUrl
+      });
+      if (resolved && resolved.m3u8Url) {
+        ch.m3u8Url = resolved.m3u8Url;
+        ch.proxyM3u8Url = resolved.proxyM3u8Url;
+      }
+    })
+  );
 
   const payload = {
     result: true,
@@ -409,6 +724,38 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
 
   apiCache.set(cacheKey, { timestamp: Date.now(), data: payload });
   return payload;
+}
+
+/**
+ * Rewrites all segment URLs AND tag attributes (URI="...") in an HLS .m3u8 playlist to route through /api/live/proxy.
+ */
+function rewriteHlsPlaylist(body, targetUrl, albaId = '') {
+  const baseObj = new URL(targetUrl);
+  const albaSuffix = albaId ? `&albaId=${encodeURIComponent(albaId)}` : '';
+  const toProxyUrl = (rawRef) => {
+    try {
+      const abs = new URL(rawRef.trim(), baseObj).toString();
+      return `/api/live/proxy?url=${encodeURIComponent(abs)}${albaSuffix}`;
+    } catch (_) {
+      return rawRef;
+    }
+  };
+
+  return String(body || '')
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return line;
+      if (trimmed.startsWith('#')) {
+        // Rewrite URI="..." inside #EXT-X-KEY, #EXT-X-MAP, #EXT-X-MEDIA, #EXT-X-I-FRAME-STREAM-INF
+        if (trimmed.includes('URI="')) {
+          return line.replace(/URI="([^"]+)"/g, (_, uri) => `URI="${toProxyUrl(uri)}"`);
+        }
+        return line;
+      }
+      return toProxyUrl(trimmed);
+    })
+    .join('\n');
 }
 
 const server = http.createServer(async (req, res) => {
@@ -504,12 +851,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 2. Live Channel Resolver: /api/live/resolve?id=test-1
+  // 2. Live Channel Resolver: /api/live/resolve?id=test-1[&refresh=1]
   if (pathname === '/api/live/resolve') {
     const albaId = parsedUrl.searchParams.get('id') || 'test-1';
+    const forceRefresh = parsedUrl.searchParams.get('refresh') === '1';
+    const matchUrl = parsedUrl.searchParams.get('matchUrl') || '';
     try {
-      const resolved = await resolveAlbaPlayerChannel(albaId);
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      const resolved = await resolveAlbaPlayerChannel(albaId, { forceRefresh, matchUrl });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify({ result: true, ...resolved }));
     } catch (err) {
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -518,9 +867,92 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 3. HLS (.m3u8 / .ts) CORS & Referer Proxy: /api/live/proxy?url=<encodedUrl>
+  // 2b. Same-Origin YooyoTV AlbaPlayer Embed Proxy: /api/live/embed?id=test-1
+  // Solves browser 3rd-party cookie (PHPSESSID) blocking and CORS inside cross-origin iframes
+  if (pathname === '/api/live/embed') {
+    const cleanId = String(parsedUrl.searchParams.get('id') || 'test-1').replace(/[^a-zA-Z0-9_-]/g, '');
+    const targetEmbed = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(cleanId)}`;
+    try {
+      const cookieHeader = getYooyoCookieHeader(cleanId);
+      const upstream = await fetchRemoteBuffer(targetEmbed, {
+        timeoutMs: 8000,
+        headers: {
+          Referer: 'https://yooyotvlive.com.ng/',
+          Origin: 'https://yooyotvlive.com.ng',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {})
+        }
+      });
+      storeSetCookies(upstream.headers['set-cookie'], cleanId);
+      const m3u8Url = extractM3u8FromText(upstream.body, targetEmbed);
+      if (m3u8Url) {
+        const prev = yooyoSessions.get(cleanId) || {};
+        yooyoSessions.set(cleanId, { ...prev, m3u8Url, refererUrl: targetEmbed, updatedAt: Date.now() });
+      }
+
+      let html = upstream.body || '';
+      // Inject <base> so relative CSS/JS assets load from yooyotvlive.com.ng/albaplayer-package/
+      const baseTag = '<base href="https://yooyotvlive.com.ng/albaplayer-package/" />';
+      if (/<head[^>]*>/i.test(html)) {
+        html = html.replace(/<head[^>]*>/i, (m) => `${m}\n${baseTag}`);
+      } else {
+        html = `${baseTag}\n${html}`;
+      }
+      // Route AlbaPlayer's ?status=1 AJAX poll through our same-origin /api/live/embed-status endpoint
+      html = html.replace(
+        /(?:https?:\/\/yooyotvlive\.com\.ng\/albaplayer-package\/)?m3u8-player\.php\?status=1/gi,
+        `/api/live/embed-status?id=${encodeURIComponent(cleanId)}&status=1`
+      );
+
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      res.end(html);
+    } catch (err) {
+      // Fallback: redirect to the direct embed URL if server cannot reach upstream
+      res.writeHead(302, { Location: targetEmbed });
+      res.end();
+    }
+    return;
+  }
+
+  // 2c. AlbaPlayer ?status=1 Session Proxy for /api/live/embed
+  if (pathname === '/api/live/embed-status') {
+    const cleanId = String(parsedUrl.searchParams.get('id') || 'test-1').replace(/[^a-zA-Z0-9_-]/g, '');
+    const embedUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(cleanId)}`;
+    const statusUrl = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?status=1&_=${Date.now()}`;
+    try {
+      let cookieHeader = getYooyoCookieHeader(cleanId);
+      if (!cookieHeader) {
+        await resolveAlbaPlayerChannel(cleanId, { forceRefresh: true });
+        cookieHeader = getYooyoCookieHeader(cleanId);
+      }
+      const statusRes = await fetchRemoteBuffer(statusUrl, {
+        timeoutMs: 6000,
+        headers: {
+          Referer: embedUrl,
+          Origin: 'https://yooyotvlive.com.ng',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {})
+        }
+      });
+      storeSetCookies(statusRes.headers['set-cookie'], cleanId);
+      res.writeHead(200, {
+        'Content-Type': statusRes.headers['content-type'] || 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      res.end(statusRes.body);
+    } catch (err) {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // 3. HLS (.m3u8 / .ts / .m4s / key) CORS, Cookie & Referer Proxy: /api/live/proxy?url=<encodedUrl>[&albaId=<id>]
   if (pathname === '/api/live/proxy') {
     const target = parsedUrl.searchParams.get('url');
+    const albaId = parsedUrl.searchParams.get('albaId') || '';
     if (!target || !/^https?:\/\//i.test(target)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Valid http/https URL required' }));
@@ -528,47 +960,46 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
+      const session = albaId ? yooyoSessions.get(albaId) : null;
+      const cookieHeader = getYooyoCookieHeader(albaId);
+      const referer = (session && session.refererUrl) || 'https://yooyotvlive.com.ng/';
+      const reqHeaders = {
+        Referer: referer,
+        Origin: 'https://yooyotvlive.com.ng'
+      };
+      if (cookieHeader && target.includes('yooyotvlive.com.ng')) {
+        reqHeaders.Cookie = cookieHeader;
+      }
+      if (req.headers.range) {
+        reqHeaders.Range = req.headers.range;
+      }
+
       const upstream = await fetchRemoteBuffer(target, {
-        timeoutMs: 9000,
-        headers: {
-          Referer: 'https://yooyotvlive.com.ng/',
-          Origin: 'https://yooyotvlive.com.ng'
-        }
+        timeoutMs: 9500,
+        headers: reqHeaders
       });
 
       const contentType = upstream.headers['content-type'] || 'application/vnd.apple.mpegurl';
       const isM3u8 =
-        target.includes('.m3u8') ||
-        contentType.includes('mpegurl') ||
+        /\.m3u8(\?|$)/i.test(target) ||
+        contentType.toLowerCase().includes('mpegurl') ||
         upstream.body.trimStart().startsWith('#EXTM3U');
 
       if (isM3u8) {
-        // Rewrite relative segment/playlist paths to absolute URLs (proxied through /api/live/proxy)
-        const baseObj = new URL(target);
-        const rewritten = upstream.body
-          .split(/\r?\n/)
-          .map((line) => {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith('#')) return line;
-            try {
-              const abs = new URL(trimmed, baseObj).toString();
-              return `/api/live/proxy?url=${encodeURIComponent(abs)}`;
-            } catch (_) {
-              return line;
-            }
-          })
-          .join('\n');
-
+        const rewritten = rewriteHlsPlaylist(upstream.body, target, albaId);
         res.writeHead(200, {
           'Content-Type': 'application/vnd.apple.mpegurl; charset=utf-8',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-store'
         });
         res.end(rewritten);
       } else {
-        res.writeHead(upstream.statusCode || 200, {
+        const outHeaders = {
           'Content-Type': contentType,
           'Cache-Control': 'max-age=60'
-        });
+        };
+        if (upstream.headers['content-range']) outHeaders['Content-Range'] = upstream.headers['content-range'];
+        if (upstream.headers['accept-ranges']) outHeaders['Accept-Ranges'] = upstream.headers['accept-ranges'];
+        res.writeHead(upstream.statusCode || 200, outHeaders);
         res.end(upstream.buffer);
       }
     } catch (err) {
