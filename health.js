@@ -72,7 +72,14 @@ function probe(url, { expectPlaylist }) {
 }
 
 async function checkChannel(ch) {
-  if (ch.albaId || ch.sourceSite === 'yooyotvlive.com.ng' || String(ch.id || '').startsWith('yooyo-')) {
+  if (
+    ch.alwaysOnline ||
+    ch.id === 'kora-plus-main' ||
+    String(ch.m3u8Url || '').includes('kora-plus.li') ||
+    ch.albaId ||
+    ch.sourceSite === 'yooyotvlive.com.ng' ||
+    String(ch.id || '').startsWith('yooyo-')
+  ) {
     return true;
   }
   const checks = [];

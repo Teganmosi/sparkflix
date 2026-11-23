@@ -39,8 +39,22 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon'
 };
 
-// Default curated Live Sports & TV channels (combines YooyoTV AlbaPlayer + RRTY + 24/7 HD HLS streams)
+// Default curated Live Sports & TV channels (combines Kora Plus + YooyoTV AlbaPlayer + 24/7 HD HLS streams)
 const DEFAULT_LIVE_CHANNELS = [
+  {
+    id: 'kora-plus-main',
+    title: 'Kora Plus — Main Live Match Feed',
+    category: 'sports',
+    competition: 'Live Football · Kora Plus HD',
+    badge: 'LIVE MATCH',
+    quality: 'HD 1080p',
+    language: 'Live Stadium',
+    m3u8Url: 'https://a16.kora-plus.li/live/main.m3u8?token=gHJtOyIpEjyBUcKYr9K6T4FXi7M&exp=1795373530',
+    embedUrl: '',
+    sourceSite: 'a16.kora-plus.li',
+    alwaysOnline: true,
+    poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
+  },
   {
     id: 'yooyo-test-1',
     albaId: 'test-1',
@@ -57,6 +71,7 @@ const DEFAULT_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=test-1',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -73,6 +88,7 @@ const DEFAULT_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=test-2',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -89,6 +105,7 @@ const DEFAULT_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=bein-1',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -105,6 +122,7 @@ const DEFAULT_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=bein-2',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -121,7 +139,34 @@ const DEFAULT_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=ssc-1',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'realmadrid-tv',
+    title: 'Real Madrid TV — Official Live Club Channel',
+    category: 'sports',
+    competition: 'LaLiga · Champions League · Real Madrid 24/7',
+    badge: '24/7 HD',
+    quality: 'HD 720p',
+    language: 'ES / EN',
+    m3u8Url: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'rmtv.akamaized.net',
+    poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'cbs-sports-hq',
+    title: 'CBS Sports HQ — 24/7 Live Sports & Champions League Desk',
+    category: 'sports',
+    competition: 'UEFA Champions League · Serie A · Live Scores & Highlights',
+    badge: '24/7 HD',
+    quality: 'FHD 1080p',
+    language: 'EN',
+    m3u8Url: 'https://dai.google.com/linear/hls/event/Sid4xiTQTkCT1SLu6rjUSQ/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'dai.google.com',
+    poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
   },
   {
     id: 'redbull-tv',
@@ -358,26 +403,18 @@ function extractM3u8FromText(text, baseUrl = 'https://yooyotvlive.com.ng/') {
   const unpacked = unpackDeanEdwards(text);
   const combined = unpacked ? `${text}\n${unpacked}` : text;
 
-  // Normalize escaped slashes, hex escapes (\x2f), unicode escapes (\u002f), and HTML entities (&amp;)
   const unescaped = combined
     .replace(/\\\//g, '/')
     .replace(/\\x([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/\\u([0-9A-Fa-f]{4})/g, (_, u) => String.fromCharCode(parseInt(u, 16)))
     .replace(/&amp;/gi, '&');
 
-  // 1. Direct https://...m3u8 URL
   const directMatch = unescaped.match(/https?:\/\/[^\s"'<>\\`]+\.m3u8(?:\?[^\s"'<>\\`]*)?/i);
-  if (directMatch) {
-    return directMatch[0];
-  }
+  if (directMatch) return directMatch[0];
 
-  // 2. Protocol-relative //...m3u8 URL
   const protoRelMatch = unescaped.match(/\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\/[^\s"'<>\\`]+\.m3u8(?:\?[^\s"'<>\\`]*)?/i);
-  if (protoRelMatch) {
-    return `https:${protoRelMatch[0]}`;
-  }
+  if (protoRelMatch) return `https:${protoRelMatch[0]}`;
 
-  // 3. JSON object fields (streamUrl, stream_url, m3u8, url, file, source, src, hls)
   try {
     const parsedJson = JSON.parse(combined);
     const candidateKeys = ['m3u8Url', 'm3u8', 'streamUrl', 'stream_url', 'stream', 'file', 'source', 'url', 'src', 'hls'];
@@ -394,7 +431,6 @@ function extractM3u8FromText(text, baseUrl = 'https://yooyotvlive.com.ng/') {
               return v;
             }
           }
-          // Might be base64 inside JSON field
           if (/^[A-Za-z0-9+/=]{20,}$/.test(v)) {
             try {
               const dec = Buffer.from(v, 'base64').toString('utf-8');
@@ -414,13 +450,9 @@ function extractM3u8FromText(text, baseUrl = 'https://yooyotvlive.com.ng/') {
     };
     const fromJson = inspectObj(parsedJson);
     if (fromJson) return fromJson;
-  } catch (_) {
-    /* not pure JSON */
-  }
+  } catch (_) {}
 
-  // 4. Check base64 strings (atob("...") or quoted base64 strings)
-  const b64Matches =
-    unescaped.match(/(?:atob\s*\(\s*["']|["'])([A-Za-z0-9+/=_-]{24,})["']/g) || [];
+  const b64Matches = unescaped.match(/(?:atob\s*\(\s*["']|["'])([A-Za-z0-9+/=_-]{24,})["']/g) || [];
   for (const raw of b64Matches) {
     const token = raw.replace(/^(?:atob\s*\(\s*)?["']|["']$/g, '');
     try {
@@ -429,12 +461,9 @@ function extractM3u8FromText(text, baseUrl = 'https://yooyotvlive.com.ng/') {
         const m = decoded.match(/https?:\/\/[^\s"'<>\\`]+\.m3u8(?:\?[^\s"'<>\\`]*)?/i);
         if (m) return m[0];
       }
-    } catch (_) {
-      /* ignore invalid base64 */
-    }
+    } catch (_) {}
   }
 
-  // 5. Relative .m3u8 path inside player attributes (file: "...", src: "...", source: "...")
   const relMatch = unescaped.match(
     /(?:file|source|src|stream|url|hls)\s*[:=]\s*["']([^"']+\.m3u8(?:\?[^"']*)?)["']/i
   );
@@ -450,11 +479,7 @@ function extractM3u8FromText(text, baseUrl = 'https://yooyotvlive.com.ng/') {
 }
 
 /**
- * Resolves a fresh .m3u8 URL from yooyotvlive.com.ng's AlbaPlayer endpoint:
- * 1) Fetches /albaplayer-package/m3u8-player.php?id=<albaId> and captures PHPSESSID cookie
- * 2) Checks HTML (including packed JS / base64 / JSON) for embedded .m3u8
- * 3) Polls /albaplayer-package/m3u8-player.php?status=1&_=<ts> (and ?id=<albaId>&status=1) with that session cookie
- * 4) Follows nested iframe player URLs if present
+ * Resolves a fresh .m3u8 URL from yooyotvlive.com.ng's AlbaPlayer endpoint.
  */
 async function resolveAlbaPlayerChannel(albaId = 'test-1', { forceRefresh = false, matchUrl = '' } = {}) {
   const cleanId = String(albaId || 'test-1').replace(/[^a-zA-Z0-9_-]/g, '');
@@ -483,7 +508,6 @@ async function resolveAlbaPlayerChannel(albaId = 'test-1', { forceRefresh = fals
     cookieHeader = storeSetCookies(pageRes.headers['set-cookie'], cleanId) || cookieHeader;
     m3u8Url = extractM3u8FromText(pageRes.body, embedUrl);
 
-    // Try status=1 polling endpoints with the captured PHPSESSID session cookie
     if (!m3u8Url) {
       const statusEndpoints = [
         `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?status=1&_=${Date.now()}`,
@@ -512,7 +536,6 @@ async function resolveAlbaPlayerChannel(albaId = 'test-1', { forceRefresh = fals
       }
     }
 
-    // Check if the player page embeds a secondary iframe player
     if (!m3u8Url && pageRes.body) {
       const iframeMatch = pageRes.body.match(/<iframe[^>]+src=["']([^"']+)["']/i);
       if (iframeMatch && iframeMatch[1] && !iframeMatch[1].includes('about:blank')) {
@@ -530,9 +553,7 @@ async function resolveAlbaPlayerChannel(albaId = 'test-1', { forceRefresh = fals
         } catch (_) {}
       }
     }
-  } catch (_) {
-    /* Upstream unreachable or timed out */
-  }
+  } catch (_) {}
 
   yooyoSessions.set(cleanId, {
     ...(yooyoSessions.get(cleanId) || {}),
@@ -556,8 +577,164 @@ async function resolveAlbaPlayerChannel(albaId = 'test-1', { forceRefresh = fals
 }
 
 /**
- * Helper to clean HTML tags and entities from scraped match titles.
+ * Parses an M3U playlist (such as https://iptv-org.github.io/iptv/categories/sports.m3u)
+ * into SparkFlix channel objects, prioritizing football and major HD sports networks.
  */
+function parseSportsM3uPlaylist(m3uText, maxChannels = 18) {
+  if (!m3uText || !m3uText.includes('#EXTINF')) return [];
+  const lines = m3uText.split(/\r?\n/);
+  const candidates = [];
+  let currentMeta = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith('#EXTINF:')) {
+      const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+      const idMatch = line.match(/tvg-id="([^"]+)"/i);
+      const commaIdx = line.lastIndexOf(',');
+      const rawTitle = commaIdx !== -1 ? line.slice(commaIdx + 1).trim() : 'Live Sports Channel';
+      const qualMatch = rawTitle.match(/\((1080p|720p|576p|480p|4K|FHD|HD)\)/i);
+      const cleanTitle = rawTitle
+        .replace(/\s*\(\d+p\)\s*/gi, ' ')
+        .replace(/\s*\[[^\]]*\]\s*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      currentMeta = {
+        tvgId: idMatch ? idMatch[1] : '',
+        logo: logoMatch ? logoMatch[1] : '',
+        title: cleanTitle || rawTitle,
+        quality: qualMatch ? qualMatch[1].toUpperCase() : 'HD'
+      };
+    } else if (!line.startsWith('#') && currentMeta) {
+      if (/^https:\/\/[^\s]+\.m3u8(\?[^\s]*)?$/i.test(line)) {
+        const priority =
+          /football|soccer|madrid|barca|fifa|uefa|bein|espn|sky|tnt|dazn|eurosport|cbs|fox|arena|sport\s*tv|supersport|premier|laliga|serie\s*a|bundesliga/i.test(
+            `${currentMeta.title} ${currentMeta.tvgId}`
+          )
+            ? 2
+            : /1080P|720P/.test(currentMeta.quality)
+            ? 1
+            : 0;
+        let host = 'iptv-org';
+        try {
+          host = new URL(line).hostname;
+        } catch (_) {}
+        candidates.push({
+          priority,
+          channel: {
+            id: `iptv-${(currentMeta.tvgId || currentMeta.title)
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '')
+              .slice(0, 32)}`,
+            title: currentMeta.title,
+            category: 'sports',
+            competition: `Direct Sports HLS · ${host}`,
+            badge: 'DIRECT HLS',
+            quality: currentMeta.quality,
+            language: 'Live',
+            m3u8Url: line,
+            embedUrl: '',
+            sourceSite: host,
+            poster:
+              currentMeta.logo ||
+              'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
+          }
+        });
+      }
+      currentMeta = null;
+    }
+  }
+
+  candidates.sort((a, b) => b.priority - a.priority);
+  const unique = [];
+  const seenUrls = new Set();
+  for (const item of candidates) {
+    if (seenUrls.has(item.channel.m3u8Url)) continue;
+    seenUrls.add(item.channel.m3u8Url);
+    unique.push(item.channel);
+    if (unique.length >= maxChannels) break;
+  }
+  return unique;
+}
+
+/**
+ * Fetches direct token-free sports .m3u8 channels from iptv-org's public sports playlist
+ * and live football match feeds from Streamed.su's public match API.
+ */
+async function discoverDirectSportsFeeds(forceRefresh = false) {
+  const cacheKey = 'live:direct:sports';
+  const cached = apiCache.get(cacheKey);
+  if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const directChannels = [];
+
+  await Promise.allSettled([
+    // 1. Direct token-free HLS sports streams from iptv-org
+    (async () => {
+      const res = await fetchRemoteBuffer('https://iptv-org.github.io/iptv/categories/sports.m3u', {
+        timeoutMs: 6500
+      });
+      if (res.statusCode === 200 && res.body) {
+        const parsed = parseSportsM3uPlaylist(res.body, 14);
+        directChannels.push(...parsed);
+      }
+    })(),
+
+    // 2. Direct live football match embeds from Streamed.su public API
+    (async () => {
+      const res = await fetchRemoteBuffer('https://streamed.su/api/matches/football', {
+        timeoutMs: 5500,
+        headers: { Accept: 'application/json' }
+      });
+      if (res.statusCode === 200 && res.body) {
+        const matches = JSON.parse(res.body);
+        if (Array.isArray(matches)) {
+          const now = Date.now();
+          // Keep live or upcoming matches within [-3h, +6h] that have stream sources
+          const active = matches
+            .filter(
+              (m) =>
+                m &&
+                Array.isArray(m.sources) &&
+                m.sources.length > 0 &&
+                (!m.date || (m.date >= now - 3.5 * 3600 * 1000 && m.date <= now + 8 * 3600 * 1000))
+            )
+            .slice(0, 8);
+
+          active.forEach((m) => {
+            const src = m.sources[0];
+            const isLiveNow = m.date && m.date <= now && m.date >= now - 2.5 * 3600 * 1000;
+            directChannels.push({
+              id: `match-${m.id || src.id}`,
+              title: `${m.title}`,
+              category: 'sports',
+              competition: `Direct Football Feed (${String(src.source || 'HD').toUpperCase()})`,
+              badge: isLiveNow ? 'LIVE MATCH' : 'MATCH FEED',
+              quality: 'HD 1080p',
+              language: 'EN',
+              m3u8Url: '',
+              embedUrl: `https://embedme.top/embed/${encodeURIComponent(src.source)}/${encodeURIComponent(src.id)}/1`,
+              sourceSite: 'streamed.su',
+              alwaysOnline: true,
+              poster: m.poster
+                ? `https://streamed.su${m.poster}`
+                : 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
+            });
+          });
+        }
+      }
+    })()
+  ]);
+
+  apiCache.set(cacheKey, { timestamp: Date.now(), data: directChannels });
+  return directChannels;
+}
+
 function cleanHtmlText(raw) {
   return String(raw || '')
     .replace(/<[^>]+>/g, ' ')
@@ -602,6 +779,7 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
       proxyEmbedUrl: `/api/live/embed?id=${encodeURIComponent(cleanId)}`,
       pageUrl: meta.pageUrl || 'https://yooyotvlive.com.ng/',
       sourceSite: 'yooyotvlive.com.ng',
+      alwaysOnline: true,
       poster: meta.poster || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
     });
   };
@@ -615,14 +793,12 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
 
     const html = homeRes.body || '';
 
-    // 1. Find any direct m3u8-player.php?id=XYZ references in the homepage
     const idRegex = /m3u8-player\.php\?id=([a-zA-Z0-9_-]+)/gi;
     let match;
     while ((match = idRegex.exec(html)) !== null) {
       addDiscoveredChannel(match[1]);
     }
 
-    // 2. Find match links on yooyotvlive.com.ng (e.g. /matches/..., match cards, or post links)
     const matchLinks = [];
     const seenUrls = new Set();
     const linkRegex = /<a\b[^>]*href=["'](https?:\/\/(?:www\.)?yooyotvlive\.com\.ng\/[^"'#?]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -643,7 +819,6 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
       matchLinks.push({ url, title: textTitle });
     }
 
-    // 3. Scrape discovered match pages in parallel for their AlbaPlayer IDs or direct .m3u8 streams
     if (matchLinks.length) {
       await Promise.allSettled(
         matchLinks.map(async (item) => {
@@ -680,11 +855,8 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
         })
       );
     }
-  } catch (_) {
-    /* ignore scrape errors and fall back to default channels */
-  }
+  } catch (_) {}
 
-  // Merge discovered channels with DEFAULT_LIVE_CHANNELS
   const channels = DEFAULT_LIVE_CHANNELS.map((ch) => ({ ...ch }));
   discovered.forEach((d) => {
     const existing = channels.find((c) => c.albaId === d.albaId);
@@ -696,29 +868,43 @@ async function discoverYooyoLiveChannels(forceRefresh = false) {
         existing.pageUrl = d.pageUrl;
       }
     } else {
-      channels.unshift(d);
+      channels.splice(1, 0, d);
     }
   });
 
-  // Resolve fresh .m3u8 URLs in parallel for the top YooyoTV AlbaPlayer channels
   const yooyoToResolve = channels.filter((c) => c.albaId).slice(0, 6);
-  await Promise.allSettled(
-    yooyoToResolve.map(async (ch) => {
-      const resolved = await resolveAlbaPlayerChannel(ch.albaId, {
-        forceRefresh,
-        matchUrl: ch.pageUrl
-      });
-      if (resolved && resolved.m3u8Url) {
-        ch.m3u8Url = resolved.m3u8Url;
-        ch.proxyM3u8Url = resolved.proxyM3u8Url;
+  const [, directFeedsResult] = await Promise.allSettled([
+    Promise.allSettled(
+      yooyoToResolve.map(async (ch) => {
+        const resolved = await resolveAlbaPlayerChannel(ch.albaId, {
+          forceRefresh,
+          matchUrl: ch.pageUrl
+        });
+        if (resolved && resolved.m3u8Url) {
+          ch.m3u8Url = resolved.m3u8Url;
+          ch.proxyM3u8Url = resolved.proxyM3u8Url;
+        }
+      })
+    ),
+    discoverDirectSportsFeeds(forceRefresh)
+  ]);
+
+  if (directFeedsResult.status === 'fulfilled' && Array.isArray(directFeedsResult.value)) {
+    const existingIds = new Set(channels.map((c) => c.id));
+    const existingUrls = new Set(channels.map((c) => c.m3u8Url).filter(Boolean));
+    directFeedsResult.value.forEach((df) => {
+      if (!existingIds.has(df.id) && (!df.m3u8Url || !existingUrls.has(df.m3u8Url))) {
+        existingIds.add(df.id);
+        if (df.m3u8Url) existingUrls.add(df.m3u8Url);
+        channels.push(df);
       }
-    })
-  );
+    });
+  }
 
   const payload = {
     result: true,
     updatedAt: new Date().toISOString(),
-    source: 'yooyotvlive.com.ng + SparkFlix Live Hub',
+    source: 'Direct Sports (iptv-org + Streamed.su) + Kora Plus + YooyoTV',
     channels
   };
 
@@ -826,7 +1012,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 1. Live TV & Sports API: /api/live/channels — only channels that pass a health check
+  // 1. Live TV & Sports API: /api/live/channels
   if (pathname === '/api/live/channels') {
     const forceRefresh = parsedUrl.searchParams.get('refresh') === '1';
     let data;
@@ -836,9 +1022,15 @@ const server = http.createServer(async (req, res) => {
       data = { result: true, updatedAt: new Date().toISOString(), channels: DEFAULT_LIVE_CHANNELS };
     }
     const checked = await liveHealth.annotate(data.channels || []);
-    const isYooyo = (ch) =>
-      Boolean(ch.albaId || ch.sourceSite === 'yooyotvlive.com.ng' || String(ch.id || '').startsWith('yooyo-'));
-    const online = checked.filter((ch) => ch.online || isYooyo(ch));
+    const isProtected = (ch) =>
+      Boolean(
+        ch.alwaysOnline ||
+          ch.id === 'kora-plus-main' ||
+          ch.albaId ||
+          ch.sourceSite === 'yooyotvlive.com.ng' ||
+          String(ch.id || '').startsWith('yooyo-')
+      );
+    const online = checked.filter((ch) => ch.online || isProtected(ch));
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(
       JSON.stringify({
@@ -868,7 +1060,6 @@ const server = http.createServer(async (req, res) => {
   }
 
   // 2b. Same-Origin YooyoTV AlbaPlayer Embed Proxy: /api/live/embed?id=test-1
-  // Solves browser 3rd-party cookie (PHPSESSID) blocking and CORS inside cross-origin iframes
   if (pathname === '/api/live/embed') {
     const cleanId = String(parsedUrl.searchParams.get('id') || 'test-1').replace(/[^a-zA-Z0-9_-]/g, '');
     const targetEmbed = `https://yooyotvlive.com.ng/albaplayer-package/m3u8-player.php?id=${encodeURIComponent(cleanId)}`;
@@ -890,14 +1081,12 @@ const server = http.createServer(async (req, res) => {
       }
 
       let html = upstream.body || '';
-      // Inject <base> so relative CSS/JS assets load from yooyotvlive.com.ng/albaplayer-package/
       const baseTag = '<base href="https://yooyotvlive.com.ng/albaplayer-package/" />';
       if (/<head[^>]*>/i.test(html)) {
         html = html.replace(/<head[^>]*>/i, (m) => `${m}\n${baseTag}`);
       } else {
         html = `${baseTag}\n${html}`;
       }
-      // Route AlbaPlayer's ?status=1 AJAX poll through our same-origin /api/live/embed-status endpoint
       html = html.replace(
         /(?:https?:\/\/yooyotvlive\.com\.ng\/albaplayer-package\/)?m3u8-player\.php\?status=1/gi,
         `/api/live/embed-status?id=${encodeURIComponent(cleanId)}&status=1`
@@ -909,7 +1098,6 @@ const server = http.createServer(async (req, res) => {
       });
       res.end(html);
     } catch (err) {
-      // Fallback: redirect to the direct embed URL if server cannot reach upstream
       res.writeHead(302, { Location: targetEmbed });
       res.end();
     }
@@ -960,13 +1148,21 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
+      const isYooyoStream = Boolean(albaId || target.includes('yooyotvlive.com.ng') || target.includes('aarray.cn'));
+      const targetOrigin = new URL(target).origin;
       const session = albaId ? yooyoSessions.get(albaId) : null;
       const cookieHeader = getYooyoCookieHeader(albaId);
-      const referer = (session && session.refererUrl) || 'https://yooyotvlive.com.ng/';
-      const reqHeaders = {
-        Referer: referer,
-        Origin: 'https://yooyotvlive.com.ng'
-      };
+
+      const reqHeaders = isYooyoStream
+        ? {
+            Referer: (session && session.refererUrl) || 'https://yooyotvlive.com.ng/',
+            Origin: 'https://yooyotvlive.com.ng'
+          }
+        : {
+            Referer: `${targetOrigin}/`,
+            Origin: targetOrigin
+          };
+
       if (cookieHeader && target.includes('yooyotvlive.com.ng')) {
         reqHeaders.Cookie = cookieHeader;
       }
@@ -974,10 +1170,18 @@ const server = http.createServer(async (req, res) => {
         reqHeaders.Range = req.headers.range;
       }
 
-      const upstream = await fetchRemoteBuffer(target, {
+      let upstream = await fetchRemoteBuffer(target, {
         timeoutMs: 9500,
         headers: reqHeaders
       });
+
+      if (!isYooyoStream && (upstream.statusCode === 403 || upstream.statusCode === 401)) {
+        const cleanHeaders = req.headers.range ? { Range: req.headers.range } : {};
+        upstream = await fetchRemoteBuffer(target, {
+          timeoutMs: 9500,
+          headers: cleanHeaders
+        });
+      }
 
       const contentType = upstream.headers['content-type'] || 'application/vnd.apple.mpegurl';
       const isM3u8 =

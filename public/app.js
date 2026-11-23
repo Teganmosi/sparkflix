@@ -111,6 +111,20 @@ const PROFILES = [
 // Client-side fallback Live Sports & TV channels (also enriched by /api/live/channels on server.js)
 const FALLBACK_LIVE_CHANNELS = [
   {
+    id: 'kora-plus-main',
+    title: 'Kora Plus — Main Live Match Feed',
+    category: 'sports',
+    competition: 'Live Football · Kora Plus HD',
+    badge: 'LIVE MATCH',
+    quality: 'HD 1080p',
+    language: 'Live Stadium',
+    m3u8Url: 'https://a16.kora-plus.li/live/main.m3u8?token=gHJtOyIpEjyBUcKYr9K6T4FXi7M&exp=1795373530',
+    embedUrl: '',
+    sourceSite: 'a16.kora-plus.li',
+    alwaysOnline: true,
+    poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
+  },
+  {
     id: 'yooyo-test-1',
     albaId: 'test-1',
     title: 'YooyoTV Main Match Feed (Server 1 HD)',
@@ -126,6 +140,7 @@ const FALLBACK_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=test-1',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -142,6 +157,7 @@ const FALLBACK_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=test-2',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -158,6 +174,7 @@ const FALLBACK_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=bein-1',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -174,6 +191,7 @@ const FALLBACK_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=bein-2',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=900&q=80'
   },
   {
@@ -190,7 +208,34 @@ const FALLBACK_LIVE_CHANNELS = [
     proxyEmbedUrl: '/api/live/embed?id=ssc-1',
     pageUrl: 'https://yooyotvlive.com.ng/',
     sourceSite: 'yooyotvlive.com.ng',
+    alwaysOnline: true,
     poster: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'realmadrid-tv',
+    title: 'Real Madrid TV — Official Live Club Channel',
+    category: 'sports',
+    competition: 'LaLiga · Champions League · Real Madrid 24/7',
+    badge: '24/7 HD',
+    quality: 'HD 720p',
+    language: 'ES / EN',
+    m3u8Url: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'rmtv.akamaized.net',
+    poster: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80'
+  },
+  {
+    id: 'cbs-sports-hq',
+    title: 'CBS Sports HQ — 24/7 Live Sports & Champions League Desk',
+    category: 'sports',
+    competition: 'UEFA Champions League · Serie A · Live Scores & Highlights',
+    badge: '24/7 HD',
+    quality: 'FHD 1080p',
+    language: 'EN',
+    m3u8Url: 'https://dai.google.com/linear/hls/event/Sid4xiTQTkCT1SLu6rjUSQ/master.m3u8',
+    embedUrl: '',
+    sourceSite: 'dai.google.com',
+    poster: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80'
   },
   {
     id: 'redbull-tv',
@@ -1554,12 +1599,13 @@ function loadLiveChannels({ forceRefresh = false } = {}) {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.channels)) {
-          // Ensure YooyoTV channels from FALLBACK_LIVE_CHANNELS are always present
+          // Ensure Kora Plus and YooyoTV channels are always present
           const incoming = [...data.channels];
           const seenIds = new Set(incoming.map((c) => c.id));
           FALLBACK_LIVE_CHANNELS.forEach((fb) => {
-            const isYooyo = fb.albaId || fb.sourceSite === 'yooyotvlive.com.ng' || String(fb.id || '').startsWith('yooyo-');
-            if (isYooyo && !seenIds.has(fb.id)) {
+            const isProtected =
+              fb.alwaysOnline || fb.albaId || fb.sourceSite === 'yooyotvlive.com.ng' || String(fb.id || '').startsWith('yooyo-');
+            if (isProtected && !seenIds.has(fb.id)) {
               incoming.unshift(fb);
             }
           });
@@ -1571,7 +1617,6 @@ function loadLiveChannels({ forceRefresh = false } = {}) {
       /* offline or server unreachable: fall back below */
     }
     if (!loaded || !state.live.channels || state.live.channels.length === 0) {
-      // Offer all built-in channels including YooyoTV
       state.live.channels = [...FALLBACK_LIVE_CHANNELS];
     }
     state.live.ready = true;
@@ -1622,7 +1667,6 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
     channel.albaId || channel.sourceSite === 'yooyotvlive.com.ng' || String(channel.id || '').startsWith('yooyo-')
   );
 
-  // Update the "YooyoTV page ↗" and "Refresh token" buttons in the control strip
   const yooyoBtn = $('live-open-yooyo-btn');
   if (yooyoBtn) {
     yooyoBtn.hidden = !isYooyo;
@@ -1646,7 +1690,6 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
   const qualityWrap = $('live-quality-wrap');
   const qualitySelect = $('live-quality-select');
 
-  // Always resolve a fresh token for YooyoTV AlbaPlayer channels when needed (tokens expire quickly)
   const tokenStale = !channel._resolvedAt || Date.now() - channel._resolvedAt > 45000;
   if (channel.albaId && engineOverride !== 'embed' && (forceResolve || !channel.m3u8Url || tokenStale)) {
     $('live-active-source-display').textContent = `/api/live/resolve?id=${channel.albaId}${forceResolve ? '&refresh=1' : ''}`;
@@ -1666,15 +1709,9 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
           channel.proxyEmbedUrl = resolved.proxyEmbedUrl;
         }
       }
-    } catch (_) {
-      /* fallback below */
-    }
+    } catch (_) {}
   }
 
-  // Decide final playback mode:
-  // - YooyoTV .m3u8 streams default to 'proxy' (Server Proxy) because upstream CDNs block browser CORS
-  // - YooyoTV channels without a raw .m3u8 automatically open the YooyoTV AlbaPlayer 'embed'
-  // - Standard 24/7 broadcasters default to direct 'hls'
   let mode = engineOverride || state.live.engine;
   if (!engineOverride) {
     if (isYooyo) {
@@ -1694,7 +1731,6 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
   syncLiveEngineButtons();
 
   if (mode === 'embed') {
-    // Use our same-origin /api/live/embed proxy for YooyoTV channels so 3rd-party PHPSESSID cookies aren't blocked
     const targetEmbed = channel.albaId
       ? channel.proxyEmbedUrl || `/api/live/embed?id=${encodeURIComponent(channel.albaId)}`
       : channel.embedUrl || channel.m3u8Url;
@@ -1706,7 +1742,7 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
     return;
   }
 
-  // HLS (.m3u8) playback (Direct or via Server Proxy with session cookies & Referer)
+  // HLS (.m3u8) playback (Direct or via Server Proxy)
   const rawM3u8 = channel.m3u8Url || channel.fallbackM3u8Url;
   const playUrl =
     mode === 'proxy'
@@ -1748,10 +1784,6 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
 
     hls.on(window.Hls.Events.ERROR, (_, data) => {
       if (!data.fatal) return;
-      // Automatic fallback cascade:
-      // 1) Direct HLS -> Server Proxy HLS
-      // 2) Server Proxy HLS (YooyoTV) -> Refresh fresh auth_key token via /api/live/resolve?refresh=1
-      // 3) Server Proxy HLS -> YooyoTV AlbaPlayer Embed (/api/live/embed)
       if (mode === 'hls') {
         showToast('Reconnecting through the SparkFlix server proxy…');
         playLiveChannel(channel, { engineOverride: 'proxy', autoplay: true });
@@ -1767,7 +1799,6 @@ async function playLiveChannel(channel, { engineOverride = null, autoplay = true
       }
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Native HLS on iOS / macOS Safari
     video.onerror = () => {
       if (state.live.activeChannel !== channel) return;
       if (mode === 'hls') {
